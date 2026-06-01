@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="OrbitTwin Cloud — Gêmeo digital urbano com dados espaciais, sensores IoT e IA para monitoramento de riscos ambientais.">
+  <title>OrbitTwin Cloud</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Camadas de fundo: grade de dados + estrelas + linhas orbitais -->
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="bg-stars" aria-hidden="true"></div>
+  <div class="bg-orbit" aria-hidden="true">
+    <span class="bg-orbit__ring"></span>
+    <span class="bg-orbit__satellite"></span>
+  </div>
+
+  <!-- Header institucional -->
+  <header class="header">
+    <div class="header__inner">
+      <div class="header__brand">
+        <div class="header__logo" aria-hidden="true">
+          <span class="logo-orbit"></span>
+          <span class="logo-core"></span>
+          <span class="logo-satellite"></span>
+        </div>
+        <div class="header__titles">
+          <h1>OrbitTwin Cloud</h1>
+          <p class="header__subtitle">Gêmeo digital urbano com dados espaciais, sensores IoT e IA</p>
+        </div>
+      </div>
+      <div class="header__meta">
+        <span class="badge badge--gs">Global Solution 2026 | Indústria Espacial</span>
+        <span class="badge badge--azure">
+          <span class="status-dot"></span>
+          Publicado em Azure Container Instances
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard">
+    <!-- Barra de ações + KPIs -->
+    <section class="toolbar">
+      <div class="toolbar__info">
+        <span class="toolbar__label">Última leitura orbital</span>
+        <span class="toolbar__time" id="last-reading">—</span>
+      </div>
+      <button type="button" class="btn-orbit" id="btn-simulate">
+        <span class="btn-orbit__icon" aria-hidden="true">🛰</span>
+        Simular nova leitura orbital
+      </button>
+    </section>
+
+    <section class="kpis" aria-label="Indicadores principais">
+      <article class="kpi card">
+        <div class="kpi__head">
+          <span class="kpi__icon">🌊</span>
+          <span class="kpi__label">Risco médio da cidade</span>
+        </div>
+        <p class="kpi__value" id="kpi-risk">—</p>
+        <div class="progress-bar" aria-hidden="true">
+          <span class="progress-bar__fill" id="kpi-risk-bar" style="width: 0%"></span>
+        </div>
+        <span class="kpi__meta" id="kpi-risk-meta">Índice composto urbano</span>
+      </article>
+
+      <article class="kpi card">
+        <div class="kpi__head">
+          <span class="kpi__icon">🗺</span>
+          <span class="kpi__label">Regiões monitoradas</span>
+        </div>
+        <p class="kpi__value" id="kpi-regions">—</p>
+        <div class="progress-bar" aria-hidden="true">
+          <span class="progress-bar__fill progress-bar__fill--cyan" id="kpi-regions-bar" style="width: 0%"></span>
+        </div>
+        <span class="kpi__meta" id="kpi-regions-meta">Cobertura do gêmeo digital</span>
+      </article>
+
+      <article class="kpi card">
+        <div class="kpi__head">
+          <span class="kpi__icon">📡</span>
+          <span class="kpi__label">Sensores ativos</span>
+        </div>
+        <p class="kpi__value" id="kpi-sensors">—</p>
+        <div class="progress-bar" aria-hidden="true">
+          <span class="progress-bar__fill progress-bar__fill--green" id="kpi-sensors-bar" style="width: 0%"></span>
+        </div>
+        <span class="kpi__meta" id="kpi-sensors-meta">Rede IoT pluviométrica</span>
+      </article>
+
+      <article class="kpi card">
+        <div class="kpi__head">
+          <span class="kpi__icon">🛰</span>
+          <span class="kpi__label">Satélites simulados</span>
+        </div>
+        <p class="kpi__value" id="kpi-satellites">—</p>
+        <div class="progress-bar" aria-hidden="true">
+          <span class="progress-bar__fill progress-bar__fill--purple" id="kpi-satellites-bar" style="width: 0%"></span>
+        </div>
+        <span class="kpi__meta" id="kpi-satellites-meta">Órbitas LEO + geoestacionária</span>
+      </article>
+
+      <article class="kpi card kpi--critical">
+        <div class="kpi__head">
+          <span class="kpi__icon">🚨</span>
+          <span class="kpi__label">Alertas críticos</span>
+        </div>
+        <p class="kpi__value" id="kpi-alerts">—</p>
+        <div class="progress-bar" aria-hidden="true">
+          <span class="progress-bar__fill progress-bar__fill--red" id="kpi-alerts-bar" style="width: 0%"></span>
+        </div>
+        <span class="kpi__meta" id="kpi-alerts-meta">Processados por IA</span>
+      </article>
+    </section>
+
+    <!-- Área principal: mapa + análise -->
+    <section class="main-grid">
+      <div class="map-card card">
+        <header class="section-head">
+          <div>
+            <h2>Mapa urbano de risco</h2>
+            <p>Telemetria integrada · sensores IoT · correção orbital</p>
+          </div>
+          <div class="data-stream" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+        </header>
+
+        <div class="urban-map" role="group" aria-label="Regiões urbanas monitoradas">
+          <button type="button" class="zone zone--centro" data-region="centro" aria-pressed="false">
+            <span class="zone__pulse" aria-hidden="true"></span>
+            <span class="zone__name">Centro Expandido</span>
+            <span class="zone__badge" data-badge="centro">—</span>
+            <span class="zone__bar" data-bar="centro" aria-hidden="true"></span>
+          </button>
+          <button type="button" class="zone zone--oeste" data-region="oeste" aria-pressed="false">
+            <span class="zone__pulse" aria-hidden="true"></span>
+            <span class="zone__name">Zona Oeste</span>
+            <span class="zone__badge" data-badge="oeste">—</span>
+            <span class="zone__bar" data-bar="oeste" aria-hidden="true"></span>
+          </button>
+          <button type="button" class="zone zone--leste" data-region="leste" aria-pressed="false">
+            <span class="zone__pulse" aria-hidden="true"></span>
+            <span class="zone__name">Zona Leste</span>
+            <span class="zone__badge" data-badge="leste">—</span>
+            <span class="zone__bar" data-bar="leste" aria-hidden="true"></span>
+          </button>
+          <button type="button" class="zone zone--tiete" data-region="tiete" aria-pressed="false">
+            <span class="zone__pulse" aria-hidden="true"></span>
+            <span class="zone__name">Marginal Tietê</span>
+            <span class="zone__badge" data-badge="tiete">—</span>
+            <span class="zone__bar" data-bar="tiete" aria-hidden="true"></span>
+          </button>
+          <button type="button" class="zone zone--encosta" data-region="encosta" aria-pressed="false">
+            <span class="zone__pulse" aria-hidden="true"></span>
+            <span class="zone__name">Área de Encosta</span>
+            <span class="zone__badge" data-badge="encosta">—</span>
+            <span class="zone__bar" data-bar="encosta" aria-hidden="true"></span>
+          </button>
+          <button type="button" class="zone zone--sul" data-region="sul" aria-pressed="false">
+            <span class="zone__pulse" aria-hidden="true"></span>
+            <span class="zone__name">Zona Sul</span>
+            <span class="zone__badge" data-badge="sul">—</span>
+            <span class="zone__bar" data-bar="sul" aria-hidden="true"></span>
+          </button>
+          <div class="urban-map__hub" aria-hidden="true">
+            <span class="hub-ring"></span>
+            <span class="hub-label">ORBIT<br>TWIN</span>
+          </div>
+          <!-- Linhas de dados simuladas -->
+          <svg class="urban-map__lines" viewBox="0 0 600 400" preserveAspectRatio="none" aria-hidden="true">
+            <line x1="300" y1="200" x2="150" y2="80" class="data-line"/>
+            <line x1="300" y1="200" x2="450" y2="80" class="data-line"/>
+            <line x1="300" y1="200" x2="100" y2="200" class="data-line"/>
+            <line x1="300" y1="200" x2="500" y2="200" class="data-line"/>
+            <line x1="300" y1="200" x2="150" y2="320" class="data-line"/>
+            <line x1="300" y1="200" x2="450" y2="320" class="data-line"/>
+          </svg>
+        </div>
+
+        <div class="map-legend">
+          <span><i class="dot dot--low"></i> Baixo</span>
+          <span><i class="dot dot--medium"></i> Médio</span>
+          <span><i class="dot dot--high"></i> Alto</span>
+          <span><i class="dot dot--critical"></i> Crítico</span>
+        </div>
+      </div>
+
+      <aside class="analysis card" aria-live="polite" aria-atomic="true">
+        <header class="section-head section-head--compact">
+          <h2>Análise da Região</h2>
+          <p id="analysis-subtitle">Selecione uma zona no mapa</p>
+        </header>
+        <div id="analysis-content" class="analysis__body">
+          <p class="analysis__placeholder">
+            Clique em uma região para visualizar risco, telemetria IoT, fonte espacial e recomendações preventivas.
+          </p>
+        </div>
+      </aside>
+    </section>
+
+    <!-- Dados espaciais -->
+    <section class="spatial card">
+      <header class="section-head">
+        <div>
+          <h2>Dados espaciais simulados</h2>
+          <p>Produtos derivados de imagens orbitais processadas pelo gêmeo digital</p>
+        </div>
+      </header>
+      <div class="spatial-grid" id="spatial-data">
+        <!-- Preenchido via JavaScript -->
+      </div>
+    </section>
+
+    <!-- Alertas -->
+    <section class="alerts card">
+      <header class="section-head">
+        <div>
+          <h2>Alertas Inteligentes</h2>
+          <p>Correlação automática entre sensores IoT, precipitação orbital e modelos de IA</p>
+        </div>
+        <span class="alerts-count" id="alerts-count">0 ativos</span>
+      </header>
+      <div class="alerts-grid" id="alerts-grid">
+        <!-- Preenchido via JavaScript -->
+      </div>
+    </section>
+
+    <!-- Infraestrutura Cloud -->
+    <section class="infra card">
+      <header class="section-head">
+        <div>
+          <h2>Infraestrutura Cloud</h2>
+          <p>Pipeline de entrega containerizada na Microsoft Azure</p>
+        </div>
+      </header>
+      <div class="infra-flow">
+        <div class="infra-node">
+          <div class="infra-node__icon">🐳</div>
+          <h3>Docker</h3>
+          <p>Imagem <code>orbittwin-cloud:v1</code></p>
+          <span class="infra-node__tag">Build local</span>
+        </div>
+        <div class="infra-connector" aria-hidden="true"><span></span></div>
+        <div class="infra-node">
+          <div class="infra-node__icon">📦</div>
+          <h3>Azure Container Registry</h3>
+          <p>Armazena e versiona a imagem</p>
+          <span class="infra-node__tag">ACR</span>
+        </div>
+        <div class="infra-connector" aria-hidden="true"><span></span></div>
+        <div class="infra-node infra-node--highlight">
+          <div class="infra-node__icon">☁</div>
+          <h3>Azure Container Instances</h3>
+          <p>Executa o container em nuvem</p>
+          <span class="infra-node__tag">ACI · Ativo</span>
+        </div>
+        <div class="infra-connector" aria-hidden="true"><span></span></div>
+        <div class="infra-node">
+          <div class="infra-node__icon">🌐</div>
+          <h3>Nginx</h3>
+          <p>Serve HTML, CSS e JS</p>
+          <span class="infra-node__tag">Porta 80</span>
+        </div>
+        <div class="infra-connector" aria-hidden="true"><span></span></div>
+        <div class="infra-node">
+          <div class="infra-node__icon">🔗</div>
+          <h3>DNS público</h3>
+          <p>Acesso externo ao dashboard</p>
+          <span class="infra-node__tag">FQDN Azure</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>OrbitTwin Cloud · Global Solution 2026 · Cloud Solutions &amp; Scalable Infrastructure</p>
+    <p class="footer__sub">FIAP · Indústria Espacial · Gêmeo Digital Urbano</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
