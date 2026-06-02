@@ -5,7 +5,8 @@ type LayerBadge = "Real" | "Simulado" | "Planejado" | "Fallback";
 const LAYER_META: Record<MapLayerId, { label: string; defaultBadge: LayerBadge }> = {
   conventional: { label: "Rota convencional", defaultBadge: "Real" },
   safe: { label: "Rota segura", defaultBadge: "Real" },
-  riskAreas: { label: "Áreas de risco", defaultBadge: "Simulado" },
+  riskAreas: { label: "Zonas críticas", defaultBadge: "Simulado" },
+  routeAlerts: { label: "Alertas de rota", defaultBadge: "Simulado" },
   blocks: { label: "Bloqueios", defaultBadge: "Simulado" },
   sensors: { label: "Sensores IoT", defaultBadge: "Simulado" },
   facilities: { label: "Hospitais / escolas", defaultBadge: "Simulado" },

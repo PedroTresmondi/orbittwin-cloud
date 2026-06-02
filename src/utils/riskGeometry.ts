@@ -28,6 +28,20 @@ export function zoneInteriorPoint(zone: RiskZone): GeoPoint {
   return polygonCentroid(zone.polygon);
 }
 
+export function isPointInRiskZone(point: GeoPoint, zone: RiskZone): boolean {
+  return isPointInPolygon(point, zone.polygon);
+}
+
+export function isPointNearRiskZone(point: GeoPoint, zone: RiskZone, thresholdMeters = 180): boolean {
+  if (isPointInPolygon(point, zone.polygon)) return true;
+  const centroid = polygonCentroid(zone.polygon);
+  return haversineMeters(point, centroid) < thresholdMeters + 350;
+}
+
+export function pointTouchesAnyZone(point: GeoPoint, zones: RiskZone[]): RiskZone | undefined {
+  return zones.find((z) => isPointNearRiskZone(point, z));
+}
+
 /** Waypoint de desvio para OSRM contornar a zona */
 export function detourWaypointForZone(path: GeoPoint[], zone: RiskZone): GeoPoint {
   return offsetOutsideZone(path, zone);

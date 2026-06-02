@@ -13,6 +13,7 @@ import type {
   TravelProfile,
 } from "../types";
 import { findCrossedZones } from "../utils/riskGeometry";
+import { buildRouteHazards, buildCriticalRouteSegments } from "./routeHazardsService";
 import { buildCitizenRouteMessage, buildRecommendedActions } from "../utils/routeMessages";
 import { getMidpoint, getGsDetourRoutes, getSafeRoute, buildBlocksFromZones } from "./routeEngine";
 import { GS_SHOWCASE_ZONE_ID, GS_SHOWCASE_ZONE_NAME } from "../data/gsDetourDemo";
@@ -136,6 +137,18 @@ export async function planSafeRoute(
   }
 
   const crossed = findCrossedZones(routes.conventional.path, activeZones);
+  const mapHazards = buildRouteHazards({
+    conventionalPath: routes.conventional.path,
+    zones: activeZones,
+    blocks,
+    scenario,
+    environmental,
+    simulatedZoneIds: getSimulatedZoneIds(scenario),
+  });
+  const pathCriticalSegments = buildCriticalRouteSegments(
+    routes.conventional.path,
+    crossed.length ? crossed : activeZones,
+  );
   const showcaseZone = activeZones.find((z) => z.id === GS_SHOWCASE_ZONE_ID);
   const primaryRiskZone =
     (gsDetourDemo && showcaseZone) ||
@@ -143,7 +156,7 @@ export async function planSafeRoute(
     crossed[0] ||
     RISK_ZONES.find((z) => z.regionKey === regionKey) ||
     RISK_ZONES[0];
-  const criticalSegments = crossed.map((z) => `${z.name} — ${z.description}`);
+  const criticalSegmentLabels = crossed.map((z) => `${z.name} — ${z.description}`);
   const avoided = crossed
     .filter((z) => !findCrossedZones(routes.safe.path, [z]).length)
     .map((z) => `Desvio: ${z.name}`);
@@ -161,7 +174,7 @@ export async function planSafeRoute(
     safeDistanceKm: routes.safe.distanceKm,
     confidence: risk.confidence,
     source: routes.safe.source,
-    criticalSegments: criticalSegments.length ? criticalSegments : ["Trecho direto sem nomeação de zona"],
+    criticalSegments: criticalSegmentLabels.length ? criticalSegmentLabels : ["Trecho direto sem nomeação de zona"],
     avoidedBlocks: avoided.length ? avoided : ["Trechos críticos evitados pelo desvio OrbitTwin"],
     recommendation: risk.recommendation,
     map: {
@@ -173,6 +186,8 @@ export async function planSafeRoute(
       safePath: routes.safe.path,
       blocks,
       simulatedZoneIds: getSimulatedZoneIds(scenario),
+      hazards: mapHazards,
+      criticalSegments: pathCriticalSegments,
     },
     conventionalAssessment: {
       riskScore: risk.conventionalRiskScore,

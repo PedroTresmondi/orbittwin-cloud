@@ -15,6 +15,7 @@ import { OperationalHistory } from "./OperationalHistory";
 import { PlannerTabNav, type PlannerTabId } from "./PlannerTabNav";
 import { RouteCompareCompact } from "./RouteCompareCompact";
 import { RouteExplanation } from "./RouteExplanation";
+import { MapDecisionCard } from "./MapDecisionCard";
 import { RouteMap } from "./RouteMap";
 import { RouteResultStrip } from "./RouteResultStrip";
 import { RouteSummary } from "./RouteSummary";
@@ -236,26 +237,33 @@ export function SafeRoutePlanner({
                     />
                   </>
                 )}
-                <RouteMap
-                  route={planned.route}
-                  regionKey="centro"
-                  layers={mapLayers}
-                  onLayersChange={onLayersChange}
-                  environmental={planned.environmental}
-                  showAllRiskZones
-                  hideLayerUI
-                  highlightZoneId={planned.gsDetourDemo ? GS_SHOWCASE_ZONE_ID : undefined}
-                />
+                <div className="map-panel__map-stack">
+                  <MapDecisionCard
+                    extraMinutes={Math.max(planned.route.safeTime - planned.route.conventionalTime, 0)}
+                    exposureReductionPercent={planned.risk.exposureReductionPercent}
+                    blocksAvoided={planned.route.avoidedBlocks.length}
+                    confidence={planned.route.confidence}
+                    dataMode={planned.dataMode}
+                  />
+                  <RouteMap
+                    route={planned.route}
+                    regionKey="centro"
+                    layers={mapLayers}
+                    onLayersChange={onLayersChange}
+                    environmental={planned.environmental}
+                    showAllRiskZones
+                    hideLayerUI
+                    highlightZoneId={planned.gsDetourDemo ? GS_SHOWCASE_ZONE_ID : undefined}
+                  />
+                </div>
                 {firmsEmptyNotice && (
                   <MapFeedNotice variant="info">
                     NASA FIRMS: nenhum foco nesta área (24h).
                   </MapFeedNotice>
                 )}
-                <p className="map-panel__legend">
-                  <span className="map-panel__swatch map-panel__swatch--safe" /> Segura
-                  <span className="map-panel__swatch map-panel__swatch--risk" /> Convencional
-                  {isScenarioActive(activeScenario) && " · Simulação"}
-                </p>
+                {isScenarioActive(activeScenario) && (
+                  <p className="map-panel__scenario-hint">Cenário simulado ativo — zonas e alertas reforçados no mapa.</p>
+                )}
               </div>
             )}
 

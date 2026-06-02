@@ -1,8 +1,19 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import { FACILITY_POIS, SENSOR_POIS } from "../data";
-import { RISK_ZONES, RISK_ZONE_COLORS } from "../data/riskZones";
+import { RISK_ZONES } from "../data/riskZones";
+import {
+  renderBlockedSegments,
+  renderConventionalRoute,
+  renderEnvironmentalMarkers,
+  renderRiskZones,
+  renderRouteHazards,
+  renderSafeRoute,
+} from "../map/mapRenderers";
+import { attachMapBaseLayers } from "../map/mapTiles";
+import { ensureMapPanes, MAP_PANE } from "../map/mapPanes";
 import { GS_SHOWCASE_ZONE_ID } from "../data/gsDetourDemo";
+import { findCrossedZones } from "../utils/riskGeometry";
 import type { EnvironmentalContext, MapLayerVisibility, RegionKey, RouteData } from "../types";
 
 type RouteMapProps = {
@@ -14,7 +25,6 @@ type RouteMapProps = {
   compact?: boolean;
   showAllRiskZones?: boolean;
   hideLayerUI?: boolean;
-  /** Destaca zona crítica da demo GS (ex.: Marginal Tietê) */
   highlightZoneId?: string;
 };
 
@@ -22,16 +32,16 @@ export function RouteMap({
   route,
   regionKey,
   layers,
-  onLayersChange,
   environmental,
   compact = false,
   showAllRiskZones = false,
-  hideLayerUI = false,
   highlightZoneId,
 }: RouteMapProps) {
   const mapNodeRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const routeLayersRef = useRef<L.Layer[]>([]);
+  /** Evita fitBounds a cada re-render (quebrava zoom e pan). */
+  const lastFitKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!mapNodeRef.current || mapRef.current) return;
@@ -39,12 +49,15 @@ export function RouteMap({
     const leafletMap = L.map(mapNodeRef.current, {
       attributionControl: true,
       zoomControl: true,
+      dragging: true,
+      touchZoom: true,
+      scrollWheelZoom: true,
+      doubleClickZoom: true,
+      boxZoom: true,
     }).setView(route.map.center, 12);
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: "&copy; OpenStreetMap",
-    }).addTo(leafletMap);
+    attachMapBaseLayers(leafletMap);
+    ensureMapPanes(leafletMap);
 
     mapRef.current = leafletMap;
     const resizeTimer = window.setTimeout(() => leafletMap.invalidateSize(), 250);
@@ -54,6 +67,7 @@ export function RouteMap({
       routeLayersRef.current = [];
       leafletMap.remove();
       mapRef.current = null;
+      lastFitKeyRef.current = null;
     };
   }, []);
 
@@ -65,77 +79,57 @@ export function RouteMap({
     routeLayersRef.current = [];
 
     const nextLayers: L.Layer[] = [];
-
     const simulatedIds = new Set(route.map.simulatedZoneIds ?? []);
+    const hazards = route.map.hazards ?? [];
+    const pathCritical = route.map.criticalSegments ?? [];
+    const zoneHighlight =
+      highlightZoneId ??
+      (route.map.simulatedZoneIds?.includes(GS_SHOWCASE_ZONE_ID) ? GS_SHOWCASE_ZONE_ID : undefined);
+    const crossedIds = new Set(
+      findCrossedZones(route.map.conventionalPath, RISK_ZONES).map((z) => z.id),
+    );
+
+    const currentZoom = leafletMap.getZoom();
 
     if (layers.riskAreas) {
-      if (showAllRiskZones) {
-        RISK_ZONES.forEach((zone) => {
-          const colors = RISK_ZONE_COLORS[zone.riskLevel];
-          const isSimulated = simulatedIds.has(zone.id);
-          const isShowcase = highlightZoneId && zone.id === highlightZoneId;
-          nextLayers.push(
-            L.polygon(zone.polygon, {
-              className: [
-                isSimulated ? "risk-zone--simulated" : "",
-                isShowcase ? "risk-zone--showcase" : "",
-              ]
-                .filter(Boolean)
-                .join(" ") || undefined,
-              color: isShowcase ? "#5ee9ff" : colors.stroke,
-              fillColor: isShowcase ? "#ef4444" : colors.fill,
-              fillOpacity: isShowcase ? 0.48 : zone.riskLevel === "low" ? 0.12 : zone.riskLevel === "medium" ? 0.2 : 0.38,
-              opacity: isShowcase ? 1 : isSimulated ? 1 : 0.85,
-              weight: isShowcase ? 4 : zone.riskLevel === "critical" || isSimulated ? 3 : 2,
-            }).bindPopup(
-              `<strong>${zone.name}</strong>${isShowcase ? "<br/><em>Zona crítica — demo GS</em>" : ""}<br/>${zone.description}${isSimulated ? "<br/><em>Evento simulado</em>" : ""}`,
-            ),
-          );
-        });
-      } else {
-        nextLayers.push(
-          L.polygon(route.map.riskArea, {
-            color: "#ef4444",
-            fillColor: "#f97316",
-            fillOpacity: 0.28,
-            opacity: 0.9,
-            weight: 2,
-          }).bindPopup("Área de risco / alagamento previsto"),
-        );
-      }
+      nextLayers.push(
+        ...renderRiskZones({
+          showAllRiskZones,
+          riskArea: route.map.riskArea,
+          simulatedZoneIds: simulatedIds,
+          highlightZoneId: zoneHighlight,
+          crossedZoneIds: crossedIds,
+          mapZoom: currentZoom,
+        }),
+      );
     }
 
     if (layers.conventional) {
-      nextLayers.push(
-        L.polyline(route.map.conventionalPath, {
-          color: "#ef4444",
-          dashArray: "8 8",
-          opacity: 0.95,
-          weight: 5,
-        }).bindPopup("Rota convencional"),
-      );
+      nextLayers.push(...renderConventionalRoute(route.map.conventionalPath, pathCritical));
     }
 
-    if (layers.safe && route.map.safePath.length >= 2) {
-      nextLayers.push(
-        L.polyline(route.map.safePath, {
-          color: "#00d4ff",
-          opacity: 0.96,
-          weight: 5,
-          lineCap: "round",
-          lineJoin: "round",
-          smoothFactor: 1.2,
-        }).bindPopup("Rota OrbitTwin segura"),
-      );
+    if (layers.safe) {
+      const safeLine = renderSafeRoute(route.map.safePath);
+      if (safeLine) nextLayers.push(safeLine);
+    }
+
+    if (layers.routeAlerts && hazards.length > 0) {
+      nextLayers.push(...renderRouteHazards(hazards, true));
+    }
+
+    if (layers.blocks) {
+      nextLayers.push(...renderBlockedSegments(route.map.blocks));
     }
 
     nextLayers.push(
       L.circleMarker(route.map.originCoords, {
+        pane: MAP_PANE.markers,
         color: "#dbeafe",
         fillColor: "#3b82f6",
         fillOpacity: 0.95,
-        radius: 9,
+        radius: compact ? 7 : 9,
         weight: 2,
+        className: "route-endpoint route-endpoint--origin",
       })
         .bindPopup(`Origem: ${route.origin}`)
         .bindTooltip("Origem", { direction: "top" }),
@@ -143,41 +137,28 @@ export function RouteMap({
 
     nextLayers.push(
       L.circleMarker(route.map.destinationCoords, {
+        pane: MAP_PANE.markers,
         color: "#dcfce7",
         fillColor: "#22c55e",
         fillOpacity: 0.95,
-        radius: 9,
+        radius: compact ? 7 : 9,
         weight: 2,
+        className: "route-endpoint route-endpoint--destination",
       })
         .bindPopup(`Destino: ${route.destination}`)
         .bindTooltip("Destino", { direction: "top" }),
     );
-
-    if (layers.blocks) {
-      route.map.blocks.forEach((coords, index) => {
-        nextLayers.push(
-          L.circleMarker(coords, {
-            color: "#fecaca",
-            fillColor: "#ef4444",
-            fillOpacity: 0.95,
-            radius: 8,
-            weight: 2,
-          })
-            .bindPopup(`Bloqueio previsto B${index + 1}`)
-            .bindTooltip(`B${index + 1}`, { direction: "right" }),
-        );
-      });
-    }
 
     if (layers.sensors) {
       const sensors = showAllRiskZones ? SENSOR_POIS : SENSOR_POIS.filter((poi) => poi.region === regionKey);
       sensors.forEach((sensor) => {
         nextLayers.push(
           L.circleMarker(sensor.coords, {
+            pane: MAP_PANE.markers,
             color: "#67e8f9",
             fillColor: "#0891b2",
             fillOpacity: 0.9,
-            radius: 6,
+            radius: 5,
             weight: 2,
           }).bindPopup(sensor.name),
         );
@@ -191,94 +172,76 @@ export function RouteMap({
       facilities.forEach((facility) => {
         nextLayers.push(
           L.circleMarker(facility.coords, {
+            pane: MAP_PANE.markers,
             color: "#fde68a",
             fillColor: "#eab308",
             fillOpacity: 0.9,
-            radius: 7,
+            radius: 6,
             weight: 2,
           }).bindPopup(facility.name),
         );
       });
     }
 
-    if (layers.rainStations && environmental) {
-      environmental.rainStations.forEach((station) => {
-        nextLayers.push(
-          L.circleMarker([station.lat, station.lng], {
-            color: "#93c5fd",
-            fillColor: "#2563eb",
-            fillOpacity: 0.92,
-            radius: 7,
-            weight: 2,
-          }).bindPopup(
-            `<strong>${station.name}</strong><br/>Chuva 1h: ${station.rain1h ?? "—"} mm<br/>Chuva 24h: ${station.rain24h ?? "—"} mm<br/>Tipo: ${station.stationType}<br/>Fonte: ${station.source} (${station.status})`,
-          ),
-        );
-      });
-    }
-
-    if (layers.fireHotspots && environmental) {
-      environmental.fireHotspots.forEach((hotspot) => {
-        nextLayers.push(
-          L.circleMarker([hotspot.lat, hotspot.lng], {
-            color: "#ffedd5",
-            fillColor: "#ea580c",
-            fillOpacity: 0.95,
-            radius: 8,
-            weight: 2,
-            className: "fire-hotspot-marker",
-          }).bindPopup(
-            `<strong>Foco de calor</strong><br/>Confiança: ${hotspot.confidence ?? "—"}%<br/>Fonte: ${hotspot.source} (${hotspot.status})`,
-          ),
-        );
-      });
+    if (environmental && (layers.rainStations || layers.fireHotspots)) {
+      nextLayers.push(
+        ...renderEnvironmentalMarkers(environmental, {
+          rain: layers.rainStations,
+          fire: layers.fireHotspots,
+        }),
+      );
     }
 
     nextLayers.forEach((layer) => layer.addTo(leafletMap));
     routeLayersRef.current = nextLayers;
 
-    const bounds = L.latLngBounds([...route.map.conventionalPath, ...route.map.safePath]);
-    if (bounds.isValid()) {
-      leafletMap.fitBounds(bounds, { padding: [32, 32] });
-    } else {
-      leafletMap.setView(route.map.center, 12);
+    const fitKey = `${route.originPlaceId}|${route.destinationPlaceId}|${route.map.conventionalPath.length}|${route.map.safePath.length}`;
+    if (lastFitKeyRef.current !== fitKey) {
+      lastFitKeyRef.current = fitKey;
+      const bounds = L.latLngBounds([...route.map.conventionalPath, ...route.map.safePath]);
+      if (bounds.isValid()) {
+        leafletMap.fitBounds(bounds, { padding: [32, 32], maxZoom: 14 });
+      } else {
+        leafletMap.setView(route.map.center, 12);
+      }
     }
 
     const resizeTimer = window.setTimeout(() => leafletMap.invalidateSize(), 150);
     return () => window.clearTimeout(resizeTimer);
-  }, [route, regionKey, layers, showAllRiskZones, environmental]);
+  }, [route, regionKey, layers, showAllRiskZones, environmental, highlightZoneId, compact]);
 
   return (
-    <div className={`routes-map-wrap${compact ? " routes-map-wrap--compact" : ""}`}>
+    <div
+      className={`routes-map-wrap routes-map-wrap--tactical routes-map-wrap--dark${compact ? " routes-map-wrap--compact" : ""}`}
+    >
       <div className="route-map__meta">
         <span>Origem: {route.origin}</span>
         <span>Destino: {route.destination}</span>
       </div>
 
-      <div ref={mapNodeRef} className="routes-map" aria-label="Mapa com rotas e camadas operacionais" />
+      <div className="routes-map-host">
+        <div ref={mapNodeRef} className="routes-map" aria-label="Mapa operacional de rotas e riscos" />
 
-      <div className="route-map__legend">
-        <span>
-          <i className="route-legend route-legend--safe" /> Rota segura (ciano)
-        </span>
-        <span>
-          <i className="route-legend route-legend--danger" /> Convencional (risco)
-        </span>
-        <span>
-          <i className="route-legend route-legend--high" /> Área de risco
-        </span>
-        <span>
-          <i className="route-legend route-legend--simulated" /> Evento simulado
-        </span>
-        <span>
-          <i className="route-legend route-legend--block" /> Bloqueio
-        </span>
-        <span>
-          <i className="route-legend route-legend--rain" /> Pluviômetro
-        </span>
-        <span>
-          <i className="route-legend route-legend--fire" /> Foco de calor
-        </span>
+        <div className="route-map__legend-float" aria-label="Legenda do mapa">
+          <div className="route-map__legend-float-title">Legenda</div>
+          <ul>
+            <li>
+              <i className="route-legend route-legend--safe" /> Ciano — rota OrbitTwin segura
+            </li>
+            <li>
+              <i className="route-legend route-legend--danger" /> Vermelho — rota convencional
+            </li>
+            <li>
+              <i className="route-legend route-legend--high" /> Laranja — zona de risco
+            </li>
+            <li>
+              <i className="route-legend route-legend--alert-triangle" /> Triângulo — ponto crítico
+            </li>
+            <li>
+              <i className="route-legend route-legend--block-dot" /> Círculo — bloqueio previsto
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   );

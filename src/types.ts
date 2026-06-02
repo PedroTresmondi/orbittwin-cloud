@@ -120,10 +120,13 @@ export type DataSourceEntry = {
 
 export type AppMode = "citizen" | "manager";
 
+export type { RouteHazard, RouteHazardKind, RouteCriticalSegment, RouteHazardSeverity } from "./types/routeHazard";
+
 export type MapLayerId =
   | "conventional"
   | "safe"
   | "riskAreas"
+  | "routeAlerts"
   | "blocks"
   | "sensors"
   | "facilities"
@@ -204,6 +207,8 @@ export type RouteMapModel = {
   safePath: GeoPoint[];
   blocks: GeoPoint[];
   simulatedZoneIds?: string[];
+  hazards?: import("./types/routeHazard").RouteHazard[];
+  criticalSegments?: import("./types/routeHazard").RouteCriticalSegment[];
 };
 
 export type RouteData = {
@@ -344,6 +349,7 @@ export const DEFAULT_MAP_LAYERS: MapLayerVisibility = {
   conventional: true,
   safe: true,
   riskAreas: true,
+  routeAlerts: true,
   blocks: true,
   sensors: true,
   facilities: true,
@@ -358,6 +364,7 @@ export const CITIZEN_MAP_LAYERS: MapLayerVisibility = {
   conventional: true,
   safe: true,
   riskAreas: true,
+  routeAlerts: true,
   blocks: false,
   sensors: false,
   facilities: false,
@@ -372,6 +379,7 @@ export const MANAGER_MAP_LAYERS: MapLayerVisibility = {
   conventional: true,
   safe: true,
   riskAreas: true,
+  routeAlerts: true,
   blocks: true,
   sensors: true,
   facilities: true,
