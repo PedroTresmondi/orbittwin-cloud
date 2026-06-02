@@ -1677,6 +1677,449 @@ body {
 .route-legend--critical { background: #ef4444; }
 .route-legend--high { background: #f97316; }
 
+/* ---- Central de Dados ---- */
+.data-hub__intro,
+.data-hub__citizen-summary {
+  margin: 0.35rem 0 1rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.data-hub__table-wrap {
+  overflow-x: auto;
+}
+
+.data-hub__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.data-hub__table th,
+.data-hub__table td {
+  padding: 0.65rem 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: left;
+  vertical-align: top;
+}
+
+.data-hub__table th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.data-hub__status--real { color: #4ade80; }
+.data-hub__status--fallback { color: #fbbf24; }
+.data-hub__status--simulated { color: #fb923c; }
+.data-hub__status--planned { color: #94a3b8; }
+
+.data-hub__badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.data-hub__badge--real { background: rgba(34, 197, 94, 0.2); color: #86efac; }
+.data-hub__badge--fallback { background: rgba(251, 191, 36, 0.2); color: #fde68a; }
+.data-hub__badge--simulado { background: rgba(249, 115, 22, 0.2); color: #fdba74; }
+.data-hub__badge--planejado { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+
+.data-hub__detail,
+.data-hub__updated {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.data-hub__citizen-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.data-hub--citizen {
+  margin-bottom: 1rem;
+}
+
+.satellite-panel__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.satellite-panel__item {
+  padding: 0.65rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.88rem;
+}
+
+.satellite-panel__badge {
+  margin-left: 0.5rem;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  background: rgba(148, 163, 184, 0.2);
+}
+
+.map-layers__badge {
+  display: block;
+  font-size: 0.65rem;
+  color: var(--muted);
+  margin-top: 0.1rem;
+}
+
+.route-legend--rain { background: #2563eb; }
+.route-legend--fire { background: #ea580c; }
+
+/* ---- Status cenário ---- */
+.scenario-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1.25rem;
+  margin: 0 auto 1rem;
+  max-width: 1200px;
+  padding: 0.65rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  background: rgba(8, 12, 28, 0.85);
+}
+
+.scenario-status--simulated {
+  border-color: rgba(249, 115, 22, 0.45);
+  background: rgba(249, 115, 22, 0.08);
+}
+
+.scenario-status__label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.scenario-status__mode {
+  font-size: 0.85rem;
+  color: var(--cyan);
+}
+
+/* ---- Fontes de dados ---- */
+.data-sources__intro {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.data-sources__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.data-sources__item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.25rem 0.75rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.88rem;
+}
+
+.data-sources__status--online { color: #4ade80; }
+.data-sources__status--fallback { color: #fbbf24; }
+.data-sources__status--simulated { color: #fb923c; }
+
+.data-sources__note {
+  grid-column: 1 / -1;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.data-sources__warning {
+  margin: 0.75rem 0 0;
+  padding: 0.65rem;
+  border-radius: 8px;
+  background: rgba(251, 191, 36, 0.1);
+  color: #fde68a;
+  font-size: 0.85rem;
+}
+
+/* ---- Simulador de cenários ---- */
+.planner__tools {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.scenario-simulator__head p {
+  margin: 0.35rem 0 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.scenario-simulator__hint {
+  margin: 0 0 0.75rem;
+  padding: 0.55rem;
+  border-radius: 8px;
+  background: rgba(0, 212, 255, 0.06);
+  color: var(--cyan);
+  font-size: 0.85rem;
+}
+
+.scenario-simulator__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.scenario-simulator__btn {
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  background: rgba(139, 92, 246, 0.12);
+  color: var(--text);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.scenario-simulator__btn.is-active {
+  border-color: var(--cyan);
+  background: rgba(0, 212, 255, 0.15);
+  color: var(--cyan);
+}
+
+.scenario-simulator__btn--clear {
+  border-color: rgba(148, 163, 184, 0.35);
+  background: transparent;
+}
+
+.scenario-simulator__active {
+  margin: 0.75rem 0 0;
+  font-size: 0.88rem;
+  color: #fdba74;
+}
+
+.hero__example {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px dashed rgba(0, 212, 255, 0.35);
+  background: rgba(0, 212, 255, 0.04);
+}
+
+.hero__example-label {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cyan);
+  margin-bottom: 0.35rem;
+}
+
+.route-summary__meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.route-summary__mode {
+  font-size: 0.78rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+}
+
+.route-summary__mode--real { background: rgba(34, 197, 94, 0.2); color: #86efac; }
+.route-summary__mode--hybrid { background: rgba(0, 212, 255, 0.15); color: var(--cyan); }
+.route-summary__mode--simulated { background: rgba(249, 115, 22, 0.2); color: #fdba74; }
+
+.route-summary__stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  margin: 1rem 0 0;
+  font-size: 0.85rem;
+}
+
+.route-summary__stats dt { color: var(--muted); }
+.route-summary__stats dd { margin: 0; font-weight: 600; }
+
+.route-explanation__mode {
+  font-size: 0.85rem;
+  margin: 0 0 0.65rem;
+  color: var(--muted);
+}
+
+.route-explanation__mode--simulated { color: #fdba74; }
+.route-explanation__mode--hybrid { color: var(--cyan); }
+
+.history-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.history-badges__tag {
+  font-size: 0.7rem;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+}
+
+.history-badges__tag--real { background: rgba(34, 197, 94, 0.2); color: #86efac; }
+.history-badges__tag--hybrid { background: rgba(0, 212, 255, 0.15); color: var(--cyan); }
+.history-badges__tag--simulated { background: rgba(249, 115, 22, 0.2); color: #fdba74; }
+.history-badges__tag--scenario { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+
+.route-legend--block { background: #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.5); }
+.route-legend--simulated {
+  background: linear-gradient(90deg, #f97316, #ef4444);
+  animation: legend-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes legend-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+.leaflet-interactive.risk-zone--simulated {
+  animation: zone-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes zone-pulse {
+  0%, 100% { stroke-opacity: 1; fill-opacity: 0.38; }
+  50% { stroke-opacity: 0.55; fill-opacity: 0.22; }
+}
+
+/* ---- Hero ---- */
+.hero {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 1.5rem;
+  padding: 1.75rem 1.5rem;
+  margin-bottom: 0.25rem;
+  background: linear-gradient(135deg, rgba(12, 18, 42, 0.92), rgba(24, 12, 48, 0.88));
+  border: 1px solid rgba(0, 212, 255, 0.18);
+}
+
+.hero__eyebrow {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+
+.hero h2 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  background: linear-gradient(90deg, #fff, var(--cyan));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero__subtitle {
+  margin: 0.5rem 0 0.75rem;
+  font-size: 1.15rem;
+  color: var(--text);
+}
+
+.hero__text {
+  margin: 0 0 1.25rem;
+  color: var(--muted);
+  max-width: 52ch;
+  line-height: 1.55;
+}
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.btn-secondary--hero {
+  border-color: rgba(139, 92, 246, 0.45);
+}
+
+.hero__features {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.hero__features li {
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: rgba(0, 212, 255, 0.06);
+  border: 1px solid rgba(0, 212, 255, 0.12);
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.citizen-banner {
+  padding: 1rem 1.15rem;
+  border-left: 3px solid var(--cyan);
+  background: rgba(0, 212, 255, 0.06);
+}
+
+.citizen-banner p {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.planner__map-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.address-search__empty {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: #fbbf24;
+}
+
+.history-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+
+.history-sources--compact {
+  margin-top: 0.35rem;
+}
+
+.history-sources__tag {
+  font-size: 0.72rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(139, 92, 246, 0.2);
+  color: #c4b5fd;
+  border: 1px solid rgba(139, 92, 246, 0.35);
+}
+
 /* ---- Planejador de rota ---- */
 .planner { margin-top: 1.25rem; padding: 1.35rem; }
 
@@ -2022,6 +2465,11 @@ body {
 @media (max-width: 600px) {
   .planner__buttons { width: 100%; margin-left: 0; }
   .planner__buttons .btn-orbit, .planner__buttons .btn-secondary { flex: 1; }
+  .hero { grid-template-columns: 1fr; }
+  .hero__actions { flex-direction: column; }
+  .hero__actions .btn-orbit, .hero__actions .btn-secondary { width: 100%; }
+  .planner__tools { grid-template-columns: 1fr; }
+  .scenario-status { margin-left: 0.75rem; margin-right: 0.75rem; }
 }
 
 /* ---- Justificativa IA ---- */

@@ -1,4 +1,5 @@
-import { OPERATIONAL_PLACES, REGION_KEYS, createInitialState } from "../data";
+import { OPERATIONAL_PLACES, REGION_KEYS, RISK_LABELS, createInitialState } from "../data";
+import { riskLevelFromScore } from "../simulation";
 import { RISK_ZONES } from "../data/riskZones";
 import type { RegionKey } from "../types";
 import type {
@@ -7,37 +8,68 @@ import type {
   PlannedRouteResult,
   RouteData,
   RouteInputs,
+  ScenarioKind,
   SimulationReport,
   TravelProfile,
 } from "../types";
 import { findCrossedZones } from "../utils/riskGeometry";
 import { buildCitizenRouteMessage, buildRecommendedActions } from "../utils/routeMessages";
 import { getMidpoint, getSafeRoute, buildBlocksFromZones } from "./routeEngine";
+import { buildDataSources, buildRouteSimulationHistory } from "./historyMapper";
+import { buildDataSourceStatuses } from "./dataSourceService";
 import { compareRouteRisks, buildRecommendationConfidence } from "./riskService";
+import {
+  applyScenarioToWeather,
+  applyScenarioToZones,
+  buildScenarioExplanations,
+  computeDataMode,
+  getScenarioExtraBlocks,
+  getSimulatedZoneIds,
+  isScenarioActive,
+  SCENARIO_LABELS,
+} from "./scenarioService";
+import { buildDataHub } from "./dataHubService";
+import { fetchEnvironmentalContext } from "./environmentalDataService";
 import { getWeatherForRoute } from "./weatherService";
+
+export type PlanSafeRouteOptions = {
+  scenario?: ScenarioKind;
+};
 
 export async function planSafeRoute(
   origin: GeocodeResult,
   destination: GeocodeResult,
   profile: TravelProfile,
+  options?: PlanSafeRouteOptions,
 ): Promise<PlannedRouteResult> {
+  const scenario: ScenarioKind = options?.scenario && options.scenario !== "clear" ? options.scenario : "real";
   const warnings: string[] = [];
   const regionKey = inferRegionKey(origin);
   const region = createInitialState().regions[regionKey];
 
-  const [routes, weather] = await Promise.all([
-    getSafeRoute(origin, destination, RISK_ZONES, profile),
+  const activeZones = applyScenarioToZones(RISK_ZONES, scenario);
+
+  const [baseWeather, environmental, routes] = await Promise.all([
     getWeatherForRoute([origin.lat, origin.lng], [destination.lat, destination.lng]),
+    fetchEnvironmentalContext([origin.lat, origin.lng], [destination.lat, destination.lng]),
+    getSafeRoute(origin, destination, activeZones, profile),
   ]);
 
+  const weather = applyScenarioToWeather(baseWeather, scenario);
+
   if (routes.usedFallback || routes.conventional.source === "fallback") {
-    warnings.push("Roteamento em modo de contingência local (OSRM indisponível ou sem resposta).");
+    warnings.push("Não foi possível calcular rota real. Usando rota estimada local.");
   }
-  if (weather.isSimulated) {
-    warnings.push("Clima em modo simulado — Open-Meteo indisponível.");
+  if (baseWeather.isSimulated) {
+    warnings.push("Não foi possível acessar a API de clima. Usando dados simulados.");
+  }
+  if (isScenarioActive(scenario)) {
+    warnings.push(`Cenário simulado ativo: ${SCENARIO_LABELS[scenario]}.`);
   }
 
-  const blocks = buildBlocksFromZones(RISK_ZONES);
+  const zoneBlocks = buildBlocksFromZones(activeZones);
+  const scenarioBlocks = getScenarioExtraBlocks(scenario, routes.conventional.path);
+  const blocks = [...zoneBlocks, ...scenarioBlocks];
   const profileFactor = profile === "pedestrian" || profile === "citizen" ? 1.35 : profile === "emergency" ? 0.9 : 1;
   const conventionalTime = Math.max(5, Math.round(routes.conventional.durationMinutes * profileFactor));
   const safeTime = Math.max(
@@ -45,18 +77,36 @@ export async function planSafeRoute(
     conventionalTime + (profile === "emergency" ? 1 : 2),
   );
 
-  const risk = compareRouteRisks({
+  let risk = compareRouteRisks({
     conventionalPath: routes.conventional.path,
     safePath: routes.safe.path,
-    zones: RISK_ZONES,
+    zones: activeZones,
     blocks,
     profile,
     weather,
     region,
     safeExtraMinutes: Math.max(safeTime - conventionalTime, 0),
+    environmental,
   });
 
-  const crossed = findCrossedZones(routes.conventional.path, RISK_ZONES);
+  if (isScenarioActive(scenario)) {
+    risk = applyScenarioRiskBoost(risk, scenario);
+    risk = {
+      ...risk,
+      explanation: [...buildScenarioExplanations(scenario, !baseWeather.isSimulated), ...risk.explanation],
+      recommendation: buildScenarioRecommendation(risk, scenario, Math.max(safeTime - conventionalTime, 0)),
+    };
+  } else if (!baseWeather.isSimulated) {
+    risk = {
+      ...risk,
+      explanation: [
+        "A previsão real indica condições consultadas via Open-Meteo.",
+        ...risk.explanation,
+      ],
+    };
+  }
+
+  const crossed = findCrossedZones(routes.conventional.path, activeZones);
   const primaryRiskZone = crossed[0] ?? RISK_ZONES.find((z) => z.regionKey === regionKey) ?? RISK_ZONES[0];
   const criticalSegments = crossed.map((z) => `${z.name} — ${z.description}`);
   const avoided = crossed
@@ -87,6 +137,7 @@ export async function planSafeRoute(
       conventionalPath: routes.conventional.path,
       safePath: routes.safe.path,
       blocks,
+      simulatedZoneIds: getSimulatedZoneIds(scenario),
     },
     conventionalAssessment: {
       riskScore: risk.conventionalRiskScore,
@@ -104,13 +155,74 @@ export async function planSafeRoute(
     },
   };
 
+  const dataSources = buildDataSourceStatuses({
+    origin,
+    destination,
+    routeSource: routes.safe.source,
+    weather,
+    scenario,
+  });
+
+  const dataHub = buildDataHub({
+    weather,
+    baseWeather,
+    routeSource: routes.safe.source,
+    origin,
+    destination,
+    scenario,
+    environmental,
+  });
+
+  if (dataSources.some((s) => s.status === "fallback")) {
+    warnings.push("Não foi possível acessar alguma fonte real. Usando dados simulados para manter a demonstração.");
+  }
+
   return {
     route: { ...route, confidence: buildRecommendationConfidence(route) },
     weather,
+    baseWeather,
     risk,
     usedFallback: routes.usedFallback || routes.conventional.source === "fallback",
     warnings,
+    scenario,
+    scenarioLabel: SCENARIO_LABELS[scenario],
+    dataMode: computeDataMode(scenario, weather, routes.safe.source),
+    dataSources,
+    dataHub,
+    environmental,
   };
+}
+
+function applyScenarioRiskBoost(risk: PlannedRouteResult["risk"], scenario: ScenarioKind): PlannedRouteResult["risk"] {
+  const boost = scenario === "multiple" ? 22 : scenario === "flood" ? 18 : 12;
+  const conventionalRiskScore = Math.min(98, risk.conventionalRiskScore + boost);
+  const safeRiskScore = Math.min(conventionalRiskScore - 4, Math.max(8, risk.safeRiskScore + 4));
+  const exposureReduction = Math.max(conventionalRiskScore - safeRiskScore, 0);
+  const exposureReductionPercent =
+    conventionalRiskScore > 0 ? Math.round((exposureReduction / conventionalRiskScore) * 100) : 0;
+
+  return {
+    ...risk,
+    conventionalRiskScore,
+    safeRiskScore,
+    conventionalRiskLabel: RISK_LABELS[riskLevelFromScore(conventionalRiskScore)] as PlannedRouteResult["risk"]["conventionalRiskLabel"],
+    safeRiskLabel: RISK_LABELS[riskLevelFromScore(safeRiskScore)] as PlannedRouteResult["risk"]["safeRiskLabel"],
+    exposureReduction,
+    exposureReductionPercent,
+    confidence: Math.min(96, risk.confidence + 8),
+  };
+}
+
+function buildScenarioRecommendation(
+  risk: PlannedRouteResult["risk"],
+  scenario: ScenarioKind,
+  extraMin: number,
+): string {
+  const timeLabel = extraMin === 1 ? "1 minuto" : `${extraMin} minutos`;
+  if (scenario === "flood" || scenario === "multiple") {
+    return `Com a ${SCENARIO_LABELS[scenario].toLowerCase()}, a rota convencional cruza áreas críticas. O OrbitTwin recomenda a rota segura, que evita trechos alagados (cerca de ${timeLabel} a mais, -${risk.exposureReductionPercent}% exposição).`;
+  }
+  return `Rota segura recomendada no cenário simulado. Ela leva ${timeLabel} a mais, mas reduz em ${risk.exposureReductionPercent}% a exposição a áreas de risco.`;
 }
 
 export function buildOperationalEvent(
@@ -122,6 +234,9 @@ export function buildOperationalEvent(
   id: string,
 ): OperationalEvent {
   const { route, weather, risk } = planned;
+  const sources = buildDataSources(planned, origin, destination);
+  const simulation = buildRouteSimulationHistory(planned, origin, destination, profile, id, timestamp);
+
   return {
     id,
     timestamp,
@@ -136,12 +251,14 @@ export function buildOperationalEvent(
     safeTime: route.safeTime,
     conventionalDistanceKm: route.conventionalDistanceKm,
     safeDistanceKm: route.safeDistanceKm,
-    exposureReduction: risk.exposureReduction,
+    exposureReduction: risk.exposureReductionPercent,
     finalRecommendation: risk.recommendation,
     riskReduction: risk.exposureReduction,
     confidence: risk.confidence,
     weatherSource: weather.source,
-    geocodeSource: origin.source === "nominatim" && destination.source === "nominatim" ? "Nominatim" : "fallback",
+    geocodeSource: origin.source === "nominatim" && destination.source === "nominatim" ? "Nominatim" : "Geocoding (fallback)",
+    sources,
+    simulation,
     plannerSnapshot: planned,
   };
 }
@@ -150,11 +267,32 @@ export function buildSimulationReport(planned: PlannedRouteResult, profile: Trav
   const { route, weather, risk } = planned;
   const regionName = RISK_ZONES.find((z) => risk.crossedZones.includes(z.name))?.name ?? "São Paulo";
 
+  const realDataUsed = [
+    ...planned.dataSources.filter((d) => d.status === "online").map((d) => `${d.label}: ${d.provider}`),
+    ...planned.dataHub
+      .filter((e) => e.badge === "Real" || e.badge === "Fallback")
+      .map((e) => `${e.name} (${e.badge})`),
+  ];
+  const simulatedDataUsed = [
+    ...planned.dataSources
+      .filter((d) => d.status === "simulated" || d.status === "fallback")
+      .map((d) => `${d.label}: ${d.note ?? d.provider}`),
+    ...planned.dataHub
+      .filter((e) => e.badge === "Simulado" || e.badge === "Planejado")
+      .map((e) => `${e.name}: ${e.usage}`),
+  ];
+
   return {
     generatedAt: new Date().toLocaleString("pt-BR"),
     origin: route.origin,
     destination: route.destination,
     profile,
+    scenario: planned.scenario,
+    scenarioLabel: planned.scenarioLabel,
+    dataMode: planned.dataMode,
+    dataSources: planned.dataSources,
+    realDataUsed,
+    simulatedDataUsed,
     region: regionName,
     recommendedRoute: "Rota OrbitTwin segura",
     conventionalRisk: route.conventionalRisk,
@@ -175,11 +313,20 @@ export function buildSimulationReport(planned: PlannedRouteResult, profile: Trav
 }
 
 function buildRecommendedActionsFromRisk(risk: PlannedRouteResult["risk"]): string[] {
-  const actions = [...risk.explanation.slice(0, 2)];
-  if (risk.conventionalRiskScore >= 70) {
-    actions.push("Evite a rota convencional até nova atualização das condições climáticas.");
+  const actions: string[] = [];
+
+  if (risk.conventionalRiskScore >= 60) {
+    actions.push("Evitar rota convencional.");
   }
-  actions.push("Siga a rota OrbitTwin destacada em ciano no mapa.");
+  if (risk.conventionalRiskScore >= 50) {
+    actions.push("Redirecionar transporte público em trechos críticos.");
+    actions.push("Emitir alerta preventivo à população.");
+  }
+  actions.push("Monitorar sensores próximos ao trajeto.");
+  if (risk.safeRiskScore <= 45) {
+    actions.push("Priorizar rota segura para equipes de emergência.");
+  }
+  actions.push(...risk.explanation.slice(0, 2));
   return [...new Set(actions)];
 }
 

@@ -1,17 +1,19 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Header } from "./components/Header";
+import { HeroSection } from "./components/HeroSection";
+import { ScenarioStatusBadge } from "./components/ScenarioStatusBadge";
 import { ManagerView } from "./components/ManagerView";
-import { ReportModal } from "./components/ReportModal";
+import { SimulationReportModal } from "./components/SimulationReportModal";
 import { SafeRoutePlanner } from "./components/SafeRoutePlanner";
 import { useSafeRoutePlanner } from "./hooks/useSafeRoutePlanner";
 import { createInitialState } from "./data";
 import { computeCityRisk, simulateOrbitalReading } from "./simulation";
 import type { AppMode, MapLayerVisibility, OrbitTwinState, RegionKey } from "./types";
-import { DEFAULT_MAP_LAYERS } from "./types";
+import { CITIZEN_MAP_LAYERS, MANAGER_MAP_LAYERS } from "./types";
 
 function App() {
   const [mode, setMode] = useState<AppMode>("citizen");
-  const [mapLayers, setMapLayers] = useState<MapLayerVisibility>(DEFAULT_MAP_LAYERS);
+  const [mapLayers, setMapLayers] = useState<MapLayerVisibility>(CITIZEN_MAP_LAYERS);
   const [state, setState] = useState<OrbitTwinState>(() => {
     const initial = createInitialState();
     return {
@@ -24,8 +26,25 @@ function App() {
     };
   });
   const [isSimulating, setIsSimulating] = useState(false);
-
   const planner = useSafeRoutePlanner(mode);
+  const prevModeRef = useRef(mode);
+
+  useEffect(() => {
+    if (prevModeRef.current === mode) return;
+    prevModeRef.current = mode;
+    setMapLayers(mode === "citizen" ? { ...CITIZEN_MAP_LAYERS } : { ...MANAGER_MAP_LAYERS });
+  }, [mode]);
+
+  const scrollTo = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const handleModeChange = (next: AppMode) => {
+    setMode(next);
+    if (next === "manager") {
+      window.setTimeout(() => scrollTo("manager-panel"), 200);
+    }
+  };
 
   const handleSimulateReading = () => {
     setIsSimulating(true);
@@ -42,9 +61,17 @@ function App() {
   return (
     <>
       <BackgroundLayers />
-      <Header mode={mode} onModeChange={setMode} />
+      <Header mode={mode} onModeChange={handleModeChange} />
+      <ScenarioStatusBadge scenario={planner.activeScenario} planned={planner.planned} />
 
       <main className="dashboard">
+        <HeroSection
+          onPlanRoute={() => scrollTo("planner-section")}
+          onOpenManager={() => handleModeChange("manager")}
+          onDemoFlood={() => void planner.demoFloodExample()}
+          isLoading={planner.isLoading}
+        />
+
         <SafeRoutePlanner
           mode={mode}
           planner={planner}
@@ -54,17 +81,19 @@ function App() {
         />
 
         {mode === "manager" && (
-          <ManagerView
-            state={state}
-            isSimulating={isSimulating}
-            plannedRoute={planner.planned?.route ?? null}
-            onSimulate={handleSimulateReading}
-            onSelectRegion={handleSelectRegion}
-          />
+          <div id="manager-panel">
+            <ManagerView
+              state={state}
+              isSimulating={isSimulating}
+              plannedRoute={planner.planned?.route ?? null}
+              onSimulate={handleSimulateReading}
+              onSelectRegion={handleSelectRegion}
+            />
+          </div>
         )}
       </main>
 
-      <ReportModal report={planner.report} onClose={() => planner.setReport(null)} />
+      <SimulationReportModal report={planner.report} onClose={() => planner.setReport(null)} />
 
       <Footer />
     </>
@@ -88,7 +117,7 @@ function Footer() {
   return (
     <footer className="footer">
       <p>OrbitTwin Cloud · Global Solution 2026 · Cloud Solutions &amp; Scalable Infrastructure</p>
-      <p className="footer__sub">Google Maps climático · Nominatim · OSRM · Open-Meteo</p>
+      <p className="footer__sub">Nominatim · OSRM · Open-Meteo · Leaflet</p>
     </footer>
   );
 }

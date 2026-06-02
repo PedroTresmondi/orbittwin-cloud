@@ -1,8 +1,8 @@
 # OrbitTwin Cloud
 
-Gêmeo digital urbano para **planejar rotas seguras** em São Paulo, cruzando geolocalização, roteamento em tempo real, clima e zonas de risco de alagamento — com interface pensada para o cidadão e para a gestão pública.
+**Google Maps de segurança climática** — gêmeo digital urbano para planejar rotas mais seguras em São Paulo, combinando geolocalização, roteamento real, clima e zonas de risco de alagamento.
 
-Desenvolvido para a **Global Solution 2026** (FIAP) · trilha **Cloud Solutions & Scalable Infrastructure** · tema **Indústria Espacial**.
+Projeto acadêmico · **Global Solution 2026** (FIAP) · Cloud Solutions & Scalable Infrastructure · Indústria Espacial.
 
 ---
 
@@ -10,81 +10,62 @@ Desenvolvido para a **Global Solution 2026** (FIAP) · trilha **Cloud Solutions 
 
 | Ambiente | URL |
 |----------|-----|
-| **GitHub Pages** | `https://SEU_USUARIO.github.io/orbittwin-cloud/` |
-| **Docker local** | `http://localhost:8080` |
-| **Vite (dev)** | `http://127.0.0.1:5173` |
-
-Substitua `SEU_USUARIO` pelo seu usuário GitHub após o primeiro deploy.
+| GitHub Pages | `https://SEU_USUARIO.github.io/orbittwin-cloud/` |
+| Docker local | `http://localhost:8080` |
+| Desenvolvimento | `http://127.0.0.1:5173` |
 
 ---
 
-## O problema que resolve
+## O que o OrbitTwin faz
 
-Em eventos de chuva intensa, a rota mais rápida nem sempre é a mais segura. O OrbitTwin compara duas trajetórias no mesmo mapa:
+Digite origem e destino como em um app de mapas (ex.: **Avenida Paulista** → **Estação Santo Amaro**). O sistema:
 
-- **Rota convencional** — caminho direto via OSRM  
-- **Rota OrbitTwin** — desvio calculado para evitar zonas críticas de alagamento e bloqueio  
-
-O sistema explica *por que* a rota segura é recomendada, exibe clima ao longo do trajeto e registra simulações para consulta posterior.
-
----
-
-## Funcionalidades
-
-### Planejador de rota segura
-- Busca de endereço em linguagem natural (ex.: *Avenida Paulista* → *Estação Santo Amaro*)
-- Autocomplete com debounce (**Nominatim** / OpenStreetMap)
-- Botão **Usar exemplo** para demonstração rápida
-- Perfis de viagem: Cidadão, Pedestre, Motorista, Ciclista, Emergência
-
-### Mapa interativo (Leaflet)
-- Polígonos de risco (alagamento, deslizamento, bloqueios)
-- Rotas sobrepostas: convencional (vermelho tracejado) e OrbitTwin (ciano)
-- Camadas: sensores IoT, hospitais/escolas, bloqueios, clima
-- Marcadores de origem e destino
-
-### Inteligência da rota
-- Score de risco 0–100 por trajeto
-- Comparação de exposição, tempo extra e distância
-- Painel climático (**Open-Meteo**): chuva, probabilidade, temperatura, umidade
-- Mensagens em linguagem clara para o cidadão
-
-### Modo Gestor
-- KPIs operacionais e alertas por região
-- Mapa regional com seleção de área
-- Simulação de leitura orbital (atualização de sensores)
-- **Relatório da simulação** em modal estruturado
-
-### Histórico operacional
-- Persistência no navegador (`localStorage`, schema v2)
-- Recarga e limpeza do histórico
-- Eventos com snapshot da simulação (origem, destino, riscos, clima)
+1. Geocodifica endereços (**Nominatim** / fallback local SP)
+2. Calcula rota convencional e rota segura (**OSRM** + desvio por zonas críticas)
+3. Consulta clima real (**Open-Meteo**)
+4. Avalia risco, tempo, distância e exposição a alagamentos
+5. Explica a recomendação em linguagem clara
+6. Salva simulações no histórico (`localStorage`)
+7. Gera relatório operacional em modal
 
 ---
 
-## Stack tecnológica
+## Modo Cidadão
 
-| Camada | Tecnologia |
-|--------|------------|
-| UI | React 19 + TypeScript |
-| Build | Vite 8 |
-| Mapas | Leaflet + OpenStreetMap tiles |
-| Geocoding | Nominatim (OSM) |
-| Roteamento | OSRM (driving) |
-| Clima | Open-Meteo |
-| Testes E2E | Playwright (smoke) |
-| Container | Docker multi-stage (Node → nginx:alpine) |
-| Deploy | GitHub Actions → GitHub Pages |
+- Interface focada em **Planejar rota segura**
+- Mensagem direta do tipo: *“Evite a rota convencional… A rota segura leva X minutos a mais, mas evita áreas críticas.”*
+- Menos camadas no mapa por padrão (rotas + áreas de risco)
+- Histórico em cards
+- Relatório da simulação disponível
+
+## Modo Gestor
+
+- Dashboard com KPIs, alertas e mapa regional
+- Simulação de leitura orbital
+- Controles de camadas do mapa (sensores, bloqueios, hospitais/escolas)
+- Histórico em tabela com fontes de dados (OSRM, Nominatim, Open-Meteo)
+- Relatório completo com ações recomendadas
+
+Toggle global no topo: **Modo Cidadão | Modo Gestor**
+
+---
+
+## Stack
+
+| Tecnologia | Uso |
+|------------|-----|
+| React + TypeScript + Vite | Frontend SPA |
+| Leaflet + OpenStreetMap | Mapa interativo |
+| Nominatim | Geocoding (texto → coordenadas) |
+| OSRM | Rotas convencional e segura |
+| Open-Meteo | Clima no trajeto |
+| Playwright | Smoke test E2E |
+| Docker (nginx) | Deploy em container |
+| GitHub Actions | CI/CD → GitHub Pages |
 
 ---
 
 ## Início rápido
-
-### Pré-requisitos
-- **Node.js** 20+ (recomendado 22)
-- **npm** 10+
-
-### Instalação e desenvolvimento
 
 ```bash
 git clone https://github.com/SEU_USUARIO/orbittwin-cloud.git
@@ -93,229 +74,188 @@ npm install
 npm run dev
 ```
 
-Abra `http://127.0.0.1:5173` no navegador.
-
-### Scripts disponíveis
+### Scripts
 
 | Comando | Descrição |
 |---------|-----------|
-| `npm run dev` | Servidor de desenvolvimento Vite |
-| `npm run build` | Type-check + build de produção em `dist/` |
-| `npm run preview` | Preview do build (caminho `/orbittwin-cloud/`) |
-| `npm run smoke` | Teste E2E com Playwright (app deve estar rodando) |
+| `npm run dev` | Servidor de desenvolvimento |
+| `npm run build` | Type-check + build produção |
+| `npm run preview` | Preview em `/orbittwin-cloud/` |
+| `npm run smoke` | Teste E2E (app rodando) |
 
 ### Smoke test
 
 ```bash
-# Terminal 1
 npm run dev
-
-# Terminal 2
+# outro terminal:
 npm run smoke
 ```
 
-Se o Vite usar outra porta:
-
-```powershell
-# Windows PowerShell
-$env:APP_URL="http://127.0.0.1:5176/"
-npm run smoke
-```
-
-```bash
-# Linux / macOS
-APP_URL=http://127.0.0.1:5176/ npm run smoke
-```
-
----
-
-## Docker
-
-Build e execução com nginx servindo o `dist/`:
+### Docker
 
 ```bash
 docker build -t orbittwin-cloud .
 docker run -d -p 8080:80 --name orbittwin-cloud orbittwin-cloud
 ```
 
-Acesse **http://localhost:8080**.
-
-> O container usa `npm run build` com o mesmo `base` configurado no Vite. Para servir em subcaminho no nginx, ajuste a configuração do servidor se necessário.
-
 ---
 
 ## Deploy no GitHub Pages
 
-Publicação automática a cada **push na branch `main`**.
+1. Push na branch `main`
+2. **Settings → Pages → Source:** **GitHub Actions**
+3. Workflow `.github/workflows/deploy.yml`: `npm ci` → smoke → build → deploy
 
-### 1. Configurar o repositório
-
-1. Envie o código para `github.com/SEU_USUARIO/orbittwin-cloud`
-2. Em **Settings → Pages → Build and deployment**, defina **Source: GitHub Actions**
-
-### 2. Ajustar o `base` do Vite
-
-O arquivo `vite.config.ts` já está preparado para o repositório `orbittwin-cloud`:
+`vite.config.ts`:
 
 ```ts
 const GITHUB_PAGES_BASE = "/orbittwin-cloud/";
 ```
 
-Se renomear o repositório, altere essa constante e faça um novo deploy.
-
-| Comando | `base` |
-|---------|--------|
-| `npm run dev` | `/` |
-| `npm run build` / `preview` | `/orbittwin-cloud/` |
-
-### 3. Pipeline (CI)
-
-O workflow `.github/workflows/deploy.yml` executa:
-
-1. `npm ci`
-2. `npm run smoke` (servidor dev temporário + Playwright)
-3. `npm run build`
-4. Publicação via `upload-pages-artifact@v3` + `deploy-pages@v4`
-
-### 4. URL publicada
-
-```
-https://SEU_USUARIO.github.io/orbittwin-cloud/
-```
-
-Acompanhe em **Actions** → *Deploy GitHub Pages* e em **Settings → Pages**.
-
-### Build local (igual ao CI)
-
-```bash
-npm ci
-npm run build
-npm run preview
-# http://127.0.0.1:4173/orbittwin-cloud/
-```
+URL: `https://pedrotresmondi.github.io/orbittwin-cloud/`
 
 ---
 
 ## Arquitetura
 
-```mermaid
-flowchart LR
-  subgraph UI["Interface React"]
-    A[SafeRoutePlanner]
-    B[RouteMap]
-    C[ManagerView]
-  end
-
-  subgraph Services["Serviços"]
-    G[geocodingService]
-    R[routeService]
-    E[routeEngine]
-    W[weatherService]
-    K[riskService]
-    S[storageService]
-  end
-
-  subgraph External["APIs públicas"]
-  N[Nominatim]
-  O[OSRM]
-  M[Open-Meteo]
-  end
-
-  A --> R
-  R --> G & E & W & K
-  G --> N
-  E --> O
-  W --> M
-  A --> S
-  B --> A
+```
+src/
+├── components/
+│   ├── HeroSection.tsx
+│   ├── SafeRoutePlanner.tsx
+│   ├── AddressSearch.tsx
+│   ├── RouteMap.tsx
+│   ├── RouteSummary.tsx
+│   ├── RouteExplanation.tsx
+│   ├── WeatherPanel.tsx
+│   ├── LayerControls.tsx
+│   ├── OperationalHistory.tsx
+│   ├── SimulationReportModal.tsx
+│   └── ViewModeToggle.tsx
+├── services/
+│   ├── geocodingService.ts
+│   ├── routeService.ts
+│   ├── routeEngine.ts
+│   ├── weatherService.ts
+│   ├── riskService.ts
+│   └── storageService.ts
+├── data/riskZones.ts
+└── hooks/useSafeRoutePlanner.ts
 ```
 
-### Estrutura de pastas
+### Fallback local
+
+- **Geocoding:** POIs de SP se Nominatim falhar
+- **Roteamento:** trechos OSRM por perna ou rota estimada
+- **Clima:** dados simulados com aviso na UI
+
+---
+
+## Fontes de dados
+
+| Fonte | Uso no OrbitTwin | Status no protótipo |
+|-------|------------------|---------------------|
+| **Open-Meteo** | Clima e previsão (chuva, temp., umidade, vento) | Real quando online |
+| **OpenStreetMap + OSRM** | Mapa e rotas convencional/segura | Real quando online |
+| **Nominatim** | Geocodificação de endereços | Real / fallback local SP |
+| **NASA FIRMS** | Focos de calor e queimadas | Real com chave em `.env.local` (ver abaixo) |
+| **CEMADEN** | Pluviômetros e estações | Planejado (estações simuladas SP) |
+| **INPE TerraBrasilis** | Camadas espaciais ambientais | Planejado (painel roadmap) |
+| **Gêmeo digital** | Polígonos de risco urbano | Simulado para demonstração |
+
+A interface exibe a **Central de Dados OrbitTwin** com selo: Real · Fallback · Simulado · Planejado.
+
+### NASA FIRMS (opcional)
+
+1. Copie `.env.example` para `.env.local` (já ignorado pelo Git).
+2. Defina `VITE_NASA_FIRMS_MAP_KEY` com a chave do [NASA FIRMS](https://firms.modaps.eosdis.nasa.gov/api/).
+3. Reinicie o dev server (`npm run dev`) para o Vite carregar a variável.
+
+Sem chave, o protótipo usa focos simulados. Com chave, a API é consultada na área da rota; se não houver queimadas ativas na região (comum em SP), o mapa pode ficar sem pontos — isso é dado real, não erro.
+
+**Deploy (GitHub Pages):** variáveis `VITE_*` entram no bundle no build. Para usar FIRMS em produção, configure o secret no workflow de deploy ou aceite que a chave fica visível no JS estático (adequado para demo acadêmica; evite chave de produção sensível).
+
+### Services
 
 ```
-orbittwin-cloud/
-├── .github/workflows/deploy.yml   # CI/CD GitHub Pages
-├── public/.nojekyll               # Evita Jekyll no Pages
-├── scripts/smoke.mjs              # Teste E2E
-├── src/
-│   ├── App.tsx                    # Modos Cidadão / Gestor
-│   ├── components/
-│   │   ├── SafeRoutePlanner.tsx   # Fluxo principal
-│   │   ├── AddressSearch.tsx
-│   │   ├── RouteMap.tsx
-│   │   ├── RouteSummary.tsx
-│   │   ├── WeatherPanel.tsx
-│   │   ├── ManagerView.tsx
-│   │   └── ReportModal.tsx
-│   ├── hooks/useSafeRoutePlanner.ts
-│   ├── services/
-│   │   ├── geocodingService.ts
-│   │   ├── routeService.ts        # planSafeRoute()
-│   │   ├── routeEngine.ts         # OSRM + desvios
-│   │   ├── weatherService.ts
-│   │   ├── riskService.ts
-│   │   └── storageService.ts
-│   ├── data/riskZones.ts          # Polígonos SP
-│   └── utils/riskGeometry.ts
-├── style.css
-├── Dockerfile
-├── vite.config.ts
-└── package.json
+src/services/
+├── weatherService.ts      # Open-Meteo
+├── fireService.ts         # NASA FIRMS (+ fallback)
+├── rainStationService.ts  # CEMADEN (roadmap)
+├── satelliteLayerService.ts
+├── environmentalDataService.ts
+└── dataHubService.ts
 ```
 
-### Integrações
+## Dados reais e simulação
 
-| API | Uso | Fallback |
-|-----|-----|----------|
-| **Nominatim** | Texto → coordenadas | POIs locais de São Paulo |
-| **OSRM** | Geometria de rota real | Rota simplificada origem–destino |
-| **Open-Meteo** | Previsão no trajeto | Clima simulado |
-| **Zonas locais** | `riskZones.ts` | Polígonos representativos (não oficiais) |
+O OrbitTwin deixa explícito na interface o que é **real** e o que é **simulado para demonstração**.
+
+### Fontes reais (quando online)
+
+| Fonte | Uso |
+|-------|-----|
+| **OpenStreetMap** | Tiles do mapa (Leaflet) |
+| **OSRM** | Geometria de rota convencional e segura |
+| **Nominatim** | Geocodificação de endereços |
+| **Open-Meteo** | Chuva, probabilidade, temperatura, umidade |
+
+### Painel “Dados reais utilizados”
+
+Cada fonte exibe status: **Online**, **Usando fallback** ou **Simulado**.
+
+### Modo de simulação de eventos
+
+Seção **“Simular cenário de risco”** com botões:
+
+- Chuva forte
+- Enchente / alagamento
+- Bloqueio de vias
+- Deslizamento / encosta
+- Múltiplos riscos
+- Limpar simulação
+
+Ao ativar um cenário (com rota já calculada), o sistema **recalcula** risco, recomendação, mapa e histórico.
+
+Badge fixo no topo: **Status do cenário** (dados reais ou simulação ativa).
+
+### Botão para apresentação
+
+**“Testar exemplo com enchente simulada”** (no hero):
+
+1. Preenche Avenida Paulista → Estação Santo Amaro  
+2. Calcula rotas via OSRM  
+3. Ativa enchente simulada  
+4. Mostra rota convencional em risco e rota OrbitTwin recomendada  
+
+Ideal para vídeo e banca, mesmo sem chuva real no dia.
+
+### Por que existe simulação?
+
+- Áreas de risco do protótipo são **camadas configuradas** (não oficiais CEMADEN/Prefeitura ainda).
+- Em dia seco, a simulação permite **provar** que a rota segura reage a eventos extremos.
 
 ---
 
-## Fluxo do usuário
+## Limitações atuais
 
-1. Informe **origem** e **destino** (ou use **Usar exemplo**)
-2. Escolha o **perfil** de deslocamento
-3. Clique em **Calcular rota segura**
-4. Compare rotas, clima e explicação no mapa
-5. Consulte o **histórico** (salvo automaticamente)
-6. No modo **Gestor**, gere o **relatório da simulação**
+- Zonas de risco são **representativas** (não oficiais CEMADEN/Prefeitura)
+- APIs públicas com rate limit
+- Histórico apenas no navegador
+- Relatório em modal (sem PDF)
 
 ---
 
-## Modos de uso
+## Próximos passos
 
-| Modo | Público | O que vê |
-|------|---------|----------|
-| **Cidadão** | População | Planejador focado, mensagem simples, mapa da rota |
-| **Gestor** | Defesa Civil / operação | Tudo do cidadão + KPIs, alertas, mapa regional, simulação orbital |
-
----
-
-## Limitações conhecidas
-
-- Zonas de risco são **representativas** (MVP acadêmico), não dados oficiais da Prefeitura ou CEMADEN
-- APIs públicas (Nominatim, OSRM) têm **rate limit** e podem falhar — há modo de contingência
-- Histórico salvo apenas no **navegador** (`localStorage`)
-- Relatório em **modal HTML**, sem exportação PDF
-- `package.json` usa algumas dependências em `latest`; em produção recomenda-se fixar versões
+- [ ] Integração **INMET** e **CEMADEN**
+- [ ] Backend com **PostGIS** para zonas oficiais
+- [ ] Sensores IoT reais
+- [ ] IA treinada com histórico de alagamentos
+- [ ] Exportação PDF do relatório
 
 ---
 
-## Roadmap
+## Autor
 
-- [ ] Backend para histórico centralizado (PostgreSQL / Cosmos DB)
-- [ ] Integração com dados oficiais de alagamento
-- [ ] Autocomplete premium (Mapbox / Google Places)
-- [ ] Notificações em eventos críticos
-- [ ] Exportação PDF do relatório operacional
-
----
-
-## Licença e autor
-
-Projeto acadêmico — **Global Solution 2026** · FIAP · Indústria Espacial.
-
-Adicione aqui seu nome, turma e link do perfil GitHub, se desejar.
+Global Solution 2026 · FIAP · Indústria Espacial

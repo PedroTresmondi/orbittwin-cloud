@@ -1,6 +1,7 @@
 import { RISK_LABELS, RISK_SCORE } from "../data";
 import { RISK_ZONES, type RiskZone } from "../data/riskZones";
 import type {
+  EnvironmentalContext,
   GeoPoint,
   Region,
   RouteExposure,
@@ -24,6 +25,21 @@ export type CalculateRouteRiskInput = {
   compareExposure?: RouteExposure;
 };
 
+function countEnvironmentalNearPath(path: GeoPoint[], environmental?: EnvironmentalContext): {
+  fires: number;
+  stations: number;
+} {
+  if (!environmental) return { fires: 0, stations: 0 };
+  const threshold = 0.025;
+  const near = (lat: number, lng: number) =>
+    path.some((p) => Math.hypot(p[0] - lat, p[1] - lng) < threshold);
+
+  return {
+    fires: environmental.fireHotspots.filter((h) => near(h.lat, h.lng)).length,
+    stations: environmental.rainStations.filter((s) => near(s.lat, s.lng)).length,
+  };
+}
+
 export function compareRouteRisks(input: {
   conventionalPath: GeoPoint[];
   safePath: GeoPoint[];
@@ -33,6 +49,7 @@ export function compareRouteRisks(input: {
   weather: WeatherForecast;
   region: Region;
   safeExtraMinutes: number;
+  environmental?: EnvironmentalContext;
 }): RouteRiskResult {
   const rainMm = input.weather.precipitationNext2Hours;
   const allPolygons = input.zones.flatMap((z) => z.polygon);
@@ -54,7 +71,17 @@ export function compareRouteRisks(input: {
     normalizeProfile(input.profile),
   );
 
-  const conventionalRiskScore = scoreFromExposure(conventionalExposure, input.region, rainMm, input.weather.precipitationProbability, input.profile);
+  const envNear = countEnvironmentalNearPath(input.conventionalPath, input.environmental);
+
+  let conventionalRiskScore = scoreFromExposure(
+    conventionalExposure,
+    input.region,
+    rainMm,
+    input.weather.precipitationProbability,
+    input.profile,
+  );
+  if (envNear.fires > 0) conventionalRiskScore = Math.min(98, conventionalRiskScore + envNear.fires * 4);
+  if (envNear.stations > 0) conventionalRiskScore = Math.min(98, conventionalRiskScore + 2);
   let safeRiskScore = scoreFromExposure(safeExposure, input.region, rainMm * 0.85, input.weather.precipitationProbability, input.profile);
   safeRiskScore = Math.min(safeRiskScore, conventionalRiskScore - 1);
 
@@ -74,6 +101,38 @@ export function compareRouteRisks(input: {
   );
 
   const explanation: string[] = [];
+
+  if (input.weather.dataStatus === "real" && !input.weather.isSimulated) {
+    explanation.push("Dados meteorológicos reais obtidos via Open-Meteo.");
+  } else {
+    explanation.push("Clima em modo simulado ou fallback — Open-Meteo indisponível ou cenário ativo.");
+  }
+
+  if (input.environmental) {
+    const rainPlanned = input.environmental.rainStations.every((s) => s.status === "planned" || s.status === "fallback");
+    if (rainPlanned) {
+      explanation.push("Pluviômetros CEMADEN em modo simulado/planejado no protótipo.");
+    } else if (envNear.stations > 0) {
+      explanation.push(`${envNear.stations} estação(ões) de chuva próxima(s) ao trajeto convencional.`);
+    }
+
+    const fireFeed = input.environmental.firesFeed;
+    const fireFallback =
+      fireFeed?.status === "fallback" ||
+      fireFeed?.status === "planned" ||
+      input.environmental.fireHotspots.some((h) => h.status !== "real");
+    if (fireFallback && envNear.fires > 0) {
+      explanation.push("Focos de calor NASA FIRMS em fallback/simulação próximos à rota.");
+    } else if (envNear.fires > 0) {
+      explanation.push(`${envNear.fires} foco(s) de calor NASA FIRMS detectado(s) na região da rota.`);
+    } else if (fireFeed?.status === "real" && fireFeed.apiOnline) {
+      explanation.push("NASA FIRMS consultado — sem focos ativos na área da rota (últimas 24h).");
+    }
+
+    if (input.environmental.satelliteLayers.some((l) => l.status === "planned")) {
+      explanation.push("Camadas INPE/TerraBrasilis previstas para evolução futura do gêmeo digital.");
+    }
+  }
 
   if (input.weather.precipitationNext2Hours >= 5) {
     explanation.push(

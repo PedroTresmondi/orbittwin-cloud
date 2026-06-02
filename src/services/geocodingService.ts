@@ -17,6 +17,10 @@ const LOCAL_FALLBACK: GeocodeResult[] = [
   { label: "Aeroporto de Congonhas, São Paulo, SP", lat: -23.6261, lng: -46.6564, type: "aerodrome", importance: 0.87, source: "fallback" },
   { label: "Terminal Bandeira, São Paulo, SP", lat: -23.547, lng: -46.644, type: "station", importance: 0.78, source: "fallback" },
   { label: "Estação da Luz, São Paulo, SP", lat: -23.535, lng: -46.635, type: "station", importance: 0.8, source: "fallback" },
+  { label: "Vila Mariana, São Paulo, SP", lat: -23.589, lng: -46.634, type: "suburb", importance: 0.79, source: "fallback" },
+  { label: "Morumbi, São Paulo, SP", lat: -23.618, lng: -46.699, type: "suburb", importance: 0.81, source: "fallback" },
+  { label: "Barra Funda, São Paulo, SP", lat: -23.525, lng: -46.667, type: "suburb", importance: 0.77, source: "fallback" },
+  { label: "Baixada do Glicério, São Paulo, SP", lat: -23.545, lng: -46.64, type: "district", importance: 0.76, source: "fallback" },
 ];
 
 let lastRequestAt = 0;

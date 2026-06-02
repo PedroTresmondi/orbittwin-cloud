@@ -1,5 +1,12 @@
 import { PLANNER_PROFILE_LABELS } from "../types";
-import type { OperationalEvent } from "../types";
+import type { DataMode, OperationalEvent } from "../types";
+import { SCENARIO_LABELS } from "../services/scenarioService";
+
+const DATA_MODE_LABELS: Record<DataMode, string> = {
+  real: "Real",
+  simulated: "Simulado",
+  hybrid: "Híbrido",
+};
 
 type OperationalHistoryProps = {
   history: OperationalEvent[];
@@ -12,7 +19,7 @@ export function OperationalHistory({ history, onSelect, onClear, variant = "card
   if (history.length === 0) {
     return (
       <section className="history-panel card">
-        <h3>Histórico recente</h3>
+        <h3>Histórico operacional</h3>
         <p className="route-history__empty">Nenhuma simulação salva neste dispositivo.</p>
       </section>
     );
@@ -21,7 +28,7 @@ export function OperationalHistory({ history, onSelect, onClear, variant = "card
   return (
     <section className="history-panel card">
       <header className="history-panel__head">
-        <h3>Histórico recente</h3>
+        <h3>Histórico operacional</h3>
         <div className="history-panel__actions">
           <span>{history.length} simulações</span>
           <button type="button" className="btn-text" onClick={onClear}>
@@ -38,6 +45,7 @@ export function OperationalHistory({ history, onSelect, onClear, variant = "card
                 <th>Data</th>
                 <th>Trajeto</th>
                 <th>Riscos</th>
+                <th>Fontes</th>
                 <th></th>
               </tr>
             </thead>
@@ -52,6 +60,10 @@ export function OperationalHistory({ history, onSelect, onClear, variant = "card
                   </td>
                   <td>
                     {event.conventionalRisk} → {event.safeRisk} (-{event.exposureReduction}%)
+                    <HistoryBadges event={event} />
+                  </td>
+                  <td>
+                    <HistorySources event={event} />
                   </td>
                   <td>
                     <button type="button" className="btn-text" onClick={() => onSelect(event)}>
@@ -73,12 +85,45 @@ export function OperationalHistory({ history, onSelect, onClear, variant = "card
               </strong>
               <p>
                 {PLANNER_PROFILE_LABELS[event.profile]} · risco {event.conventionalRisk} → {event.safeRisk} · -
-                {event.exposureReduction} pts
+                {event.exposureReduction}%
               </p>
+              <HistoryBadges event={event} />
+              <HistorySources event={event} compact />
             </button>
           ))}
         </div>
       )}
     </section>
+  );
+}
+
+function HistoryBadges({ event }: { event: OperationalEvent }) {
+  const mode = event.plannerSnapshot?.dataMode ?? "hybrid";
+  const scenario = event.plannerSnapshot?.scenario ?? "real";
+  const scenarioLabel =
+    scenario === "real" || scenario === "clear" ? "Real" : SCENARIO_LABELS[scenario].replace(" simulada", "").replace(" simulado", "");
+
+  return (
+    <div className="history-badges">
+      <span className={`history-badges__tag history-badges__tag--${mode}`}>{DATA_MODE_LABELS[mode]}</span>
+      {scenario !== "real" && scenario !== "clear" && (
+        <span className="history-badges__tag history-badges__tag--scenario">{scenarioLabel}</span>
+      )}
+    </div>
+  );
+}
+
+function HistorySources({ event, compact = false }: { event: OperationalEvent; compact?: boolean }) {
+  const sources = event.simulation?.sources ?? event.sources;
+  if (sources.length === 0) return null;
+
+  return (
+    <div className={`history-sources${compact ? " history-sources--compact" : ""}`}>
+      {sources.map((source) => (
+        <span key={source} className="history-sources__tag">
+          {source}
+        </span>
+      ))}
+    </div>
   );
 }

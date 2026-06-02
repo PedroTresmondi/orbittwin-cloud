@@ -2,23 +2,14 @@ import { useEffect, useRef } from "react";
 import L from "leaflet";
 import { FACILITY_POIS, SENSOR_POIS } from "../data";
 import { RISK_ZONES, RISK_ZONE_COLORS } from "../data/riskZones";
-import type { MapLayerId, MapLayerVisibility, RegionKey, RouteData } from "../types";
-
-const LAYER_LABELS: Record<MapLayerId, string> = {
-  conventional: "Rota convencional",
-  safe: "Rota segura",
-  riskAreas: "Áreas de risco",
-  blocks: "Bloqueios",
-  sensors: "Sensores IoT",
-  facilities: "Hospitais / escolas",
-  weather: "Dados climáticos",
-};
+import type { EnvironmentalContext, MapLayerVisibility, RegionKey, RouteData } from "../types";
 
 type RouteMapProps = {
   route: RouteData;
   regionKey: RegionKey;
   layers: MapLayerVisibility;
   onLayersChange: (layers: MapLayerVisibility) => void;
+  environmental?: EnvironmentalContext;
   compact?: boolean;
   showAllRiskZones?: boolean;
   hideLayerUI?: boolean;
@@ -29,6 +20,7 @@ export function RouteMap({
   regionKey,
   layers,
   onLayersChange,
+  environmental,
   compact = false,
   showAllRiskZones = false,
   hideLayerUI = false,
@@ -70,18 +62,24 @@ export function RouteMap({
 
     const nextLayers: L.Layer[] = [];
 
+    const simulatedIds = new Set(route.map.simulatedZoneIds ?? []);
+
     if (layers.riskAreas) {
       if (showAllRiskZones) {
         RISK_ZONES.forEach((zone) => {
           const colors = RISK_ZONE_COLORS[zone.riskLevel];
+          const isSimulated = simulatedIds.has(zone.id);
           nextLayers.push(
             L.polygon(zone.polygon, {
+              className: isSimulated ? "risk-zone--simulated" : undefined,
               color: colors.stroke,
               fillColor: colors.fill,
-              fillOpacity: zone.riskLevel === "low" ? 0.12 : zone.riskLevel === "medium" ? 0.2 : 0.32,
-              opacity: 0.85,
-              weight: zone.riskLevel === "critical" ? 2.5 : 2,
-            }).bindPopup(`<strong>${zone.name}</strong><br/>${zone.description}`),
+              fillOpacity: zone.riskLevel === "low" ? 0.12 : zone.riskLevel === "medium" ? 0.2 : 0.38,
+              opacity: isSimulated ? 1 : 0.85,
+              weight: zone.riskLevel === "critical" || isSimulated ? 3 : 2,
+            }).bindPopup(
+              `<strong>${zone.name}</strong><br/>${zone.description}${isSimulated ? "<br/><em>Evento simulado</em>" : ""}`,
+            ),
           );
         });
       } else {
@@ -193,6 +191,39 @@ export function RouteMap({
       });
     }
 
+    if (layers.rainStations && environmental) {
+      environmental.rainStations.forEach((station) => {
+        nextLayers.push(
+          L.circleMarker([station.lat, station.lng], {
+            color: "#93c5fd",
+            fillColor: "#2563eb",
+            fillOpacity: 0.92,
+            radius: 7,
+            weight: 2,
+          }).bindPopup(
+            `<strong>${station.name}</strong><br/>Chuva 1h: ${station.rain1h ?? "—"} mm<br/>Chuva 24h: ${station.rain24h ?? "—"} mm<br/>Tipo: ${station.stationType}<br/>Fonte: ${station.source} (${station.status})`,
+          ),
+        );
+      });
+    }
+
+    if (layers.fireHotspots && environmental) {
+      environmental.fireHotspots.forEach((hotspot) => {
+        nextLayers.push(
+          L.circleMarker([hotspot.lat, hotspot.lng], {
+            color: "#ffedd5",
+            fillColor: "#ea580c",
+            fillOpacity: 0.95,
+            radius: 8,
+            weight: 2,
+            className: "fire-hotspot-marker",
+          }).bindPopup(
+            `<strong>Foco de calor</strong><br/>Confiança: ${hotspot.confidence ?? "—"}%<br/>Fonte: ${hotspot.source} (${hotspot.status})`,
+          ),
+        );
+      });
+    }
+
     nextLayers.forEach((layer) => layer.addTo(leafletMap));
     routeLayersRef.current = nextLayers;
 
@@ -205,11 +236,7 @@ export function RouteMap({
 
     const resizeTimer = window.setTimeout(() => leafletMap.invalidateSize(), 150);
     return () => window.clearTimeout(resizeTimer);
-  }, [route, regionKey, layers, showAllRiskZones]);
-
-  const toggleLayer = (layerId: MapLayerId) => {
-    onLayersChange({ ...layers, [layerId]: !layers[layerId] });
-  };
+  }, [route, regionKey, layers, showAllRiskZones, environmental]);
 
   return (
     <div className={`routes-map-wrap${compact ? " routes-map-wrap--compact" : ""}`}>
@@ -218,34 +245,29 @@ export function RouteMap({
         <span>Destino: {route.destination}</span>
       </div>
 
-      {!hideLayerUI && (
-        <div className="map-layers" aria-label="Camadas do mapa">
-          {(Object.keys(LAYER_LABELS) as MapLayerId[]).map((layerId) => (
-            <label key={layerId} className="map-layers__item">
-              <input type="checkbox" checked={layers[layerId]} onChange={() => toggleLayer(layerId)} />
-              <span>{LAYER_LABELS[layerId]}</span>
-            </label>
-          ))}
-        </div>
-      )}
-
       <div ref={mapNodeRef} className="routes-map" aria-label="Mapa com rotas e camadas operacionais" />
 
       <div className="route-map__legend">
         <span>
-          <i className="route-legend route-legend--danger" /> Convencional
+          <i className="route-legend route-legend--safe" /> Rota segura (ciano)
         </span>
         <span>
-          <i className="route-legend route-legend--safe" /> Segura
+          <i className="route-legend route-legend--danger" /> Convencional (risco)
         </span>
         <span>
-          <i className="route-legend route-legend--critical" /> Crítico
+          <i className="route-legend route-legend--high" /> Área de risco
         </span>
         <span>
-          <i className="route-legend route-legend--high" /> Alto
+          <i className="route-legend route-legend--simulated" /> Evento simulado
         </span>
         <span>
-          <i className="route-legend route-legend--sensor" /> Sensor
+          <i className="route-legend route-legend--block" /> Bloqueio
+        </span>
+        <span>
+          <i className="route-legend route-legend--rain" /> Pluviômetro
+        </span>
+        <span>
+          <i className="route-legend route-legend--fire" /> Foco de calor
         </span>
       </div>
     </div>
