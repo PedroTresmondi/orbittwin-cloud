@@ -1,195 +1,321 @@
 # OrbitTwin Cloud
 
-**Google Maps de segurança climática** — gêmeo digital urbano para calcular rotas seguras com dados reais de geocoding, roteamento, clima e risco de alagamento.
+Gêmeo digital urbano para **planejar rotas seguras** em São Paulo, cruzando geolocalização, roteamento em tempo real, clima e zonas de risco de alagamento — com interface pensada para o cidadão e para a gestão pública.
 
-Desenvolvido para a **Global Solution 2026** (FIAP) — Cloud Solutions & Scalable Infrastructure.
+Desenvolvido para a **Global Solution 2026** (FIAP) · trilha **Cloud Solutions & Scalable Infrastructure** · tema **Indústria Espacial**.
 
-## Experiência principal
+---
 
-Digite em linguagem comum:
+## Demonstração
 
-- **Origem:** Avenida Paulista  
-- **Destino:** Estação Santo Amaro  
+| Ambiente | URL |
+|----------|-----|
+| **GitHub Pages** | `https://SEU_USUARIO.github.io/orbittwin-cloud/` |
+| **Docker local** | `http://localhost:8080` |
+| **Vite (dev)** | `http://127.0.0.1:5173` |
 
-O OrbitTwin:
+Substitua `SEU_USUARIO` pelo seu usuário GitHub após o primeiro deploy.
 
-1. Busca coordenadas reais (**Nominatim / OpenStreetMap**)
-2. Calcula rota convencional e rota segura (**OSRM** + desvio por zonas de risco)
-3. Consulta clima real (**Open-Meteo**)
-4. Avalia risco do trajeto e explica a recomendação
-5. Salva histórico no navegador
-6. Permite gerar relatório da simulação
+---
 
-## Modos de uso
+## O problema que resolve
 
-| Modo | Público | Interface |
-|------|---------|-----------|
-| **Cidadão** | População geral | Simples: origem, destino, calcular, mensagem clara |
-| **Gestor** | Defesa Civil / operação | + KPIs, mapa regional, alertas, dados espaciais, relatório |
+Em eventos de chuva intensa, a rota mais rápida nem sempre é a mais segura. O OrbitTwin compara duas trajetórias no mesmo mapa:
 
-## Como rodar localmente
+- **Rota convencional** — caminho direto via OSRM  
+- **Rota OrbitTwin** — desvio calculado para evitar zonas críticas de alagamento e bloqueio  
+
+O sistema explica *por que* a rota segura é recomendada, exibe clima ao longo do trajeto e registra simulações para consulta posterior.
+
+---
+
+## Funcionalidades
+
+### Planejador de rota segura
+- Busca de endereço em linguagem natural (ex.: *Avenida Paulista* → *Estação Santo Amaro*)
+- Autocomplete com debounce (**Nominatim** / OpenStreetMap)
+- Botão **Usar exemplo** para demonstração rápida
+- Perfis de viagem: Cidadão, Pedestre, Motorista, Ciclista, Emergência
+
+### Mapa interativo (Leaflet)
+- Polígonos de risco (alagamento, deslizamento, bloqueios)
+- Rotas sobrepostas: convencional (vermelho tracejado) e OrbitTwin (ciano)
+- Camadas: sensores IoT, hospitais/escolas, bloqueios, clima
+- Marcadores de origem e destino
+
+### Inteligência da rota
+- Score de risco 0–100 por trajeto
+- Comparação de exposição, tempo extra e distância
+- Painel climático (**Open-Meteo**): chuva, probabilidade, temperatura, umidade
+- Mensagens em linguagem clara para o cidadão
+
+### Modo Gestor
+- KPIs operacionais e alertas por região
+- Mapa regional com seleção de área
+- Simulação de leitura orbital (atualização de sensores)
+- **Relatório da simulação** em modal estruturado
+
+### Histórico operacional
+- Persistência no navegador (`localStorage`, schema v2)
+- Recarga e limpeza do histórico
+- Eventos com snapshot da simulação (origem, destino, riscos, clima)
+
+---
+
+## Stack tecnológica
+
+| Camada | Tecnologia |
+|--------|------------|
+| UI | React 19 + TypeScript |
+| Build | Vite 8 |
+| Mapas | Leaflet + OpenStreetMap tiles |
+| Geocoding | Nominatim (OSM) |
+| Roteamento | OSRM (driving) |
+| Clima | Open-Meteo |
+| Testes E2E | Playwright (smoke) |
+| Container | Docker multi-stage (Node → nginx:alpine) |
+| Deploy | GitHub Actions → GitHub Pages |
+
+---
+
+## Início rápido
+
+### Pré-requisitos
+- **Node.js** 20+ (recomendado 22)
+- **npm** 10+
+
+### Instalação e desenvolvimento
 
 ```bash
+git clone https://github.com/SEU_USUARIO/orbittwin-cloud.git
+cd orbittwin-cloud
 npm install
 npm run dev
 ```
 
-Abra a URL do Vite (ex.: `http://127.0.0.1:5173`).
+Abra `http://127.0.0.1:5173` no navegador.
 
-### Build e preview
+### Scripts disponíveis
 
-```bash
-npm run build
-npm run preview
-```
-
-O build de produção usa `base: "/NOME_DO_REPOSITORIO/"` (GitHub Pages). O `npm run dev` continua na raiz (`/`) para desenvolvimento local.
-
-Para testar localmente o mesmo caminho da publicação:
-
-```bash
-npm run build
-npm run preview
-```
-
-Abra: `http://127.0.0.1:4173/NOME_DO_REPOSITORIO/`
+| Comando | Descrição |
+|---------|-----------|
+| `npm run dev` | Servidor de desenvolvimento Vite |
+| `npm run build` | Type-check + build de produção em `dist/` |
+| `npm run preview` | Preview do build (caminho `/orbittwin-cloud/`) |
+| `npm run smoke` | Teste E2E com Playwright (app deve estar rodando) |
 
 ### Smoke test
 
 ```bash
+# Terminal 1
 npm run dev
-# Em outro terminal:
+
+# Terminal 2
 npm run smoke
-# Se a porta for diferente:
-# $env:APP_URL="http://127.0.0.1:5176/"; npm run smoke
 ```
 
-### Docker
+Se o Vite usar outra porta:
+
+```powershell
+# Windows PowerShell
+$env:APP_URL="http://127.0.0.1:5176/"
+npm run smoke
+```
 
 ```bash
-docker build -t orbittwin-cloud:v2 .
-docker run -d -p 8080:80 --name orbittwin-cloud orbittwin-cloud:v2
+# Linux / macOS
+APP_URL=http://127.0.0.1:5176/ npm run smoke
 ```
 
-Acesse: **http://localhost:8080**
+---
+
+## Docker
+
+Build e execução com nginx servindo o `dist/`:
+
+```bash
+docker build -t orbittwin-cloud .
+docker run -d -p 8080:80 --name orbittwin-cloud orbittwin-cloud
+```
+
+Acesse **http://localhost:8080**.
+
+> O container usa `npm run build` com o mesmo `base` configurado no Vite. Para servir em subcaminho no nginx, ajuste a configuração do servidor se necessário.
+
+---
 
 ## Deploy no GitHub Pages
 
-Publicação automática via **GitHub Actions** ao fazer push na branch `main`.
+Publicação automática a cada **push na branch `main`**.
 
-### URL final
+### 1. Configurar o repositório
 
-```
-https://SEU_USUARIO.github.io/NOME_DO_REPOSITORIO/
-```
+1. Envie o código para `github.com/SEU_USUARIO/orbittwin-cloud`
+2. Em **Settings → Pages → Build and deployment**, defina **Source: GitHub Actions**
 
-Substitua `SEU_USUARIO` pelo seu usuário GitHub e `NOME_DO_REPOSITORIO` pelo nome exato do repositório (case-sensitive).
+### 2. Ajustar o `base` do Vite
 
-### Configurar no GitHub
-
-1. Faça push do código para o repositório `SEU_USUARIO/NOME_DO_REPOSITORIO`.
-2. Em **Settings → Pages**:
-   - **Build and deployment → Source:** selecione **GitHub Actions**.
-3. O workflow `.github/workflows/deploy.yml` irá:
-   - instalar dependências (`npm ci`);
-   - rodar `npm run smoke` (com servidor de desenvolvimento temporário);
-   - rodar `npm run build`;
-   - publicar a pasta `dist` com `actions/upload-pages-artifact@v3` e `actions/deploy-pages@v4`.
-4. Após o workflow concluir, o site ficará disponível na URL acima.
-
-### Alterar o `base` do Vite
-
-Edite `vite.config.ts` e ajuste a constante para o nome real do repositório:
+O arquivo `vite.config.ts` já está preparado para o repositório `orbittwin-cloud`:
 
 ```ts
-const GITHUB_PAGES_BASE = "/NOME_DO_REPOSITORIO/";
+const GITHUB_PAGES_BASE = "/orbittwin-cloud/";
 ```
 
-Exemplo: repositório `orbittwin-cloud` → `"/orbittwin-cloud/"`.
+Se renomear o repositório, altere essa constante e faça um novo deploy.
 
-Também atualize esta documentação e o link esperado no README.
+| Comando | `base` |
+|---------|--------|
+| `npm run dev` | `/` |
+| `npm run build` / `preview` | `/orbittwin-cloud/` |
 
-Regras:
+### 3. Pipeline (CI)
 
-| Comando | `base` usado |
-|---------|----------------|
-| `npm run dev` | `/` (desenvolvimento local simples) |
-| `npm run build` | `/NOME_DO_REPOSITORIO/` (artefato para GitHub Pages) |
+O workflow `.github/workflows/deploy.yml` executa:
 
-### Build local (mesmo artefato do CI)
+1. `npm ci`
+2. `npm run smoke` (servidor dev temporário + Playwright)
+3. `npm run build`
+4. Publicação via `upload-pages-artifact@v3` + `deploy-pages@v4`
+
+### 4. URL publicada
+
+```
+https://SEU_USUARIO.github.io/orbittwin-cloud/
+```
+
+Acompanhe em **Actions** → *Deploy GitHub Pages* e em **Settings → Pages**.
+
+### Build local (igual ao CI)
 
 ```bash
 npm ci
 npm run build
+npm run preview
+# http://127.0.0.1:4173/orbittwin-cloud/
 ```
 
-Os arquivos estáticos ficam em `dist/`. O `Dockerfile` e os scripts existentes (`dev`, `preview`, `smoke`, Docker) permanecem inalterados.
+---
 
-### Verificar deploy
+## Arquitetura
 
-- Aba **Actions** do repositório → workflow **Deploy GitHub Pages**
-- Aba **Settings → Pages** → confira a URL publicada
+```mermaid
+flowchart LR
+  subgraph UI["Interface React"]
+    A[SafeRoutePlanner]
+    B[RouteMap]
+    C[ManagerView]
+  end
 
-## APIs e serviços
+  subgraph Services["Serviços"]
+    G[geocodingService]
+    R[routeService]
+    E[routeEngine]
+    W[weatherService]
+    K[riskService]
+    S[storageService]
+  end
 
-| Serviço | Arquivo | Função |
-|---------|---------|--------|
-| **Nominatim** | `geocodingService.ts` | Texto → coordenadas (debounce + fallback local SP) |
-| **OSRM** | `routeEngine.ts` | Rotas convencional e segura (waypoints de desvio) |
-| **Open-Meteo** | `weatherService.ts` | Chuva, probabilidade, temperatura, umidade |
-| **Risco** | `riskService.ts` | `compareRouteRisks()` — score, exposição, explicação |
-| **Zonas** | `data/riskZones.ts` | Polígonos de alagamento/deslizamento em SP |
-| **Histórico** | `storageService.ts` | `localStorage` v2 com recarga e limpeza |
+  subgraph External["APIs públicas"]
+  N[Nominatim]
+  O[OSRM]
+  M[Open-Meteo]
+  end
 
-## Arquitetura frontend
+  A --> R
+  R --> G & E & W & K
+  G --> N
+  E --> O
+  W --> M
+  A --> S
+  B --> A
+```
+
+### Estrutura de pastas
 
 ```
-src/
-├── components/
-│   ├── SafeRoutePlanner.tsx    # Tela principal “Planejar rota segura”
-│   ├── AddressSearch.tsx       # Autocomplete com debounce
-│   ├── RouteSummary.tsx
-│   ├── RouteExplanation.tsx
-│   ├── WeatherPanel.tsx
-│   ├── RouteMap.tsx            # Leaflet + camadas
-│   └── ...
-├── services/
-│   ├── geocodingService.ts
-│   ├── routeService.ts         # planSafeRoute()
-│   ├── routeEngine.ts          # getRoute / getSafeRoute
-│   ├── weatherService.ts
-│   ├── riskService.ts
-│   └── storageService.ts
-├── data/riskZones.ts
-└── App.tsx
+orbittwin-cloud/
+├── .github/workflows/deploy.yml   # CI/CD GitHub Pages
+├── public/.nojekyll               # Evita Jekyll no Pages
+├── scripts/smoke.mjs              # Teste E2E
+├── src/
+│   ├── App.tsx                    # Modos Cidadão / Gestor
+│   ├── components/
+│   │   ├── SafeRoutePlanner.tsx   # Fluxo principal
+│   │   ├── AddressSearch.tsx
+│   │   ├── RouteMap.tsx
+│   │   ├── RouteSummary.tsx
+│   │   ├── WeatherPanel.tsx
+│   │   ├── ManagerView.tsx
+│   │   └── ReportModal.tsx
+│   ├── hooks/useSafeRoutePlanner.ts
+│   ├── services/
+│   │   ├── geocodingService.ts
+│   │   ├── routeService.ts        # planSafeRoute()
+│   │   ├── routeEngine.ts         # OSRM + desvios
+│   │   ├── weatherService.ts
+│   │   ├── riskService.ts
+│   │   └── storageService.ts
+│   ├── data/riskZones.ts          # Polígonos SP
+│   └── utils/riskGeometry.ts
+├── style.css
+├── Dockerfile
+├── vite.config.ts
+└── package.json
 ```
+
+### Integrações
+
+| API | Uso | Fallback |
+|-----|-----|----------|
+| **Nominatim** | Texto → coordenadas | POIs locais de São Paulo |
+| **OSRM** | Geometria de rota real | Rota simplificada origem–destino |
+| **Open-Meteo** | Previsão no trajeto | Clima simulado |
+| **Zonas locais** | `riskZones.ts` | Polígonos representativos (não oficiais) |
+
+---
 
 ## Fluxo do usuário
 
-1. Digite origem e destino (ou **Usar exemplo**)
-2. Selecione perfil (Cidadão, Pedestre, Motorista, etc.)
-3. **Calcular rota segura**
-4. Veja mapa (vermelho = convencional, ciano = OrbitTwin)
-5. Leia resumo, clima e “Por que o OrbitTwin recomenda?”
-6. Histórico salvo automaticamente
-7. (Gestor) **Gerar relatório da simulação**
+1. Informe **origem** e **destino** (ou use **Usar exemplo**)
+2. Escolha o **perfil** de deslocamento
+3. Clique em **Calcular rota segura**
+4. Compare rotas, clima e explicação no mapa
+5. Consulte o **histórico** (salvo automaticamente)
+6. No modo **Gestor**, gere o **relatório da simulação**
 
-## Limitações
+---
 
-- Zonas de risco são **simuladas** (polígonos representativos de SP)
-- Nominatim público tem rate limit (~1 req/s) — há fallback local
-- OSRM público pode falhar — motor local de contingência ativa
-- Histórico apenas no navegador (`localStorage`)
-- Sem PDF no relatório (apenas modal)
+## Modos de uso
 
-## Próximos passos
+| Modo | Público | O que vê |
+|------|---------|----------|
+| **Cidadão** | População | Planejador focado, mensagem simples, mapa da rota |
+| **Gestor** | Defesa Civil / operação | Tudo do cidadão + KPIs, alertas, mapa regional, simulação orbital |
 
-- Backend para histórico centralizado (Azure Cosmos DB / PostgreSQL)
-- Dados oficiais de alagamento (Prefeitura / CEMADEN)
-- Autocomplete com Mapbox/Google Places (opcional)
-- Notificações push em eventos críticos
-- Exportação PDF do relatório
+---
 
-## Autor
+## Limitações conhecidas
 
-Projeto acadêmico — Global Solution 2026 · FIAP · Indústria Espacial
+- Zonas de risco são **representativas** (MVP acadêmico), não dados oficiais da Prefeitura ou CEMADEN
+- APIs públicas (Nominatim, OSRM) têm **rate limit** e podem falhar — há modo de contingência
+- Histórico salvo apenas no **navegador** (`localStorage`)
+- Relatório em **modal HTML**, sem exportação PDF
+- `package.json` usa algumas dependências em `latest`; em produção recomenda-se fixar versões
+
+---
+
+## Roadmap
+
+- [ ] Backend para histórico centralizado (PostgreSQL / Cosmos DB)
+- [ ] Integração com dados oficiais de alagamento
+- [ ] Autocomplete premium (Mapbox / Google Places)
+- [ ] Notificações em eventos críticos
+- [ ] Exportação PDF do relatório operacional
+
+---
+
+## Licença e autor
+
+Projeto acadêmico — **Global Solution 2026** · FIAP · Indústria Espacial.
+
+Adicione aqui seu nome, turma e link do perfil GitHub, se desejar.

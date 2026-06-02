@@ -57,8 +57,9 @@ export async function planSafeRoute(
   });
 
   const crossed = findCrossedZones(routes.conventional.path, RISK_ZONES);
+  const primaryRiskZone = crossed[0] ?? RISK_ZONES.find((z) => z.regionKey === regionKey) ?? RISK_ZONES[0];
   const criticalSegments = crossed.map((z) => `${z.name} — ${z.description}`);
-  const avoided = findCrossedZones(routes.conventional.path, RISK_ZONES)
+  const avoided = crossed
     .filter((z) => !findCrossedZones(routes.safe.path, [z]).length)
     .map((z) => `Desvio: ${z.name}`);
 
@@ -82,7 +83,7 @@ export async function planSafeRoute(
       center: getMidpoint([origin.lat, origin.lng], [destination.lat, destination.lng]),
       originCoords: [origin.lat, origin.lng],
       destinationCoords: [destination.lat, destination.lng],
-      riskArea: RISK_ZONES.flatMap((z) => z.polygon),
+      riskArea: [...primaryRiskZone.polygon],
       conventionalPath: routes.conventional.path,
       safePath: routes.safe.path,
       blocks,

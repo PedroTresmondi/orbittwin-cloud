@@ -108,12 +108,15 @@ export function RouteMap({
       );
     }
 
-    if (layers.safe) {
+    if (layers.safe && route.map.safePath.length >= 2) {
       nextLayers.push(
         L.polyline(route.map.safePath, {
           color: "#00d4ff",
           opacity: 0.96,
-          weight: 6,
+          weight: 5,
+          lineCap: "round",
+          lineJoin: "round",
+          smoothFactor: 1.2,
         }).bindPopup("Rota OrbitTwin segura"),
       );
     }

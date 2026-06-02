@@ -2,7 +2,7 @@ import { RISK_ZONES } from "../data/riskZones";
 import { ROUTE_AVOIDED_BLOCKS, ROUTE_CRITICAL_SEGMENTS } from "../data";
 import type { RiskZone } from "../data/riskZones";
 import type { GeoPoint, GeocodeResult, RouteResult, RouteSource, TravelProfile } from "../types";
-import { buildSafeWaypoints, findCrossedZones } from "../utils/riskGeometry";
+import { buildSafeWaypoints } from "../utils/riskGeometry";
 import { calculateDistanceKm, calculateTravelTimeMinutes } from "./riskModel";
 import { buildRecommendationConfidence } from "./riskService";
 
@@ -37,14 +37,12 @@ export async function getSafeRoute(
   profile: TravelProfile,
 ): Promise<{ conventional: RouteResult; safe: RouteResult; usedFallback: boolean }> {
   const conventional = await getRoute(origin, destination);
-  const crossed = findCrossedZones(conventional.path, riskZones);
   const waypoints = buildSafeWaypoints(conventional.path, riskZones);
 
-  if (crossed.length === 0 || waypoints.length === 0) {
-    const safePath = buildDetourPath(conventional.path, 0.008);
+  if (waypoints.length === 0) {
     return {
       conventional,
-      safe: buildRouteResult(safePath, conventional.source),
+      safe: cloneRouteResult(conventional),
       usedFallback: conventional.source === "fallback",
     };
   }
@@ -61,12 +59,20 @@ export async function getSafeRoute(
       usedFallback: false,
     };
   } catch {
-    const safePath = buildDetourPath(conventional.path, profile === "emergency" ? 0.006 : 0.01);
-    return {
-      conventional,
-      safe: buildRouteResult(safePath, "fallback"),
-      usedFallback: true,
-    };
+    try {
+      const osrmLegs = await fetchOsrmRouteByLegs(viaPoints);
+      return {
+        conventional,
+        safe: buildRouteResult(osrmLegs.path, "osrm", osrmLegs.durationSeconds, osrmLegs.distanceMeters),
+        usedFallback: false,
+      };
+    } catch {
+      return {
+        conventional,
+        safe: cloneRouteResult(conventional),
+        usedFallback: true,
+      };
+    }
   }
 }
 
@@ -125,11 +131,38 @@ function buildFallbackPath(origin: GeoPoint, destination: GeoPoint): GeoPoint[] 
   return [origin, mid, destination];
 }
 
-function buildDetourPath(path: GeoPoint[], offset: number): GeoPoint[] {
-  return path.map(([lat, lng], index) => {
-    const sign = index % 2 === 0 ? 1 : -1;
-    return [lat + offset * sign, lng - offset * sign * 0.8];
-  });
+function cloneRouteResult(route: RouteResult): RouteResult {
+  return {
+    path: route.path.map((point) => [...point] as GeoPoint),
+    distanceKm: route.distanceKm,
+    durationMinutes: route.durationMinutes,
+    source: route.source,
+  };
+}
+
+async function fetchOsrmRouteByLegs(points: GeoPoint[]): Promise<{
+  path: GeoPoint[];
+  durationSeconds: number;
+  distanceMeters: number;
+}> {
+  if (points.length < 2) throw new Error("OSRM legs: pontos insuficientes");
+
+  let path: GeoPoint[] = [];
+  let durationSeconds = 0;
+  let distanceMeters = 0;
+
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const leg = await fetchOsrmRoute([points[i], points[i + 1]]);
+    if (path.length === 0) {
+      path = [...leg.path];
+    } else {
+      path.push(...leg.path.slice(1));
+    }
+    durationSeconds += leg.durationSeconds;
+    distanceMeters += leg.distanceMeters;
+  }
+
+  return { path, durationSeconds, distanceMeters };
 }
 
 export function getMidpoint(a: GeoPoint, b: GeoPoint): GeoPoint {
