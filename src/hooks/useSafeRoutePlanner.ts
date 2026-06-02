@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { DEFAULT_DATA_HUB } from "../services/dataHubService";
 import { emptyEnvironmentalContext } from "../services/environmentalDataService";
 import { isFirmsApiConfigured } from "../services/fireService";
-import { EXAMPLE_ROUTE } from "../services/geocodingService";
+import { EXAMPLE_ROUTE, pickRandomSpRoute } from "../services/geocodingService";
 import { buildOperationalEvent, buildSimulationReport, planSafeRoute } from "../services/routeService";
 import { clearOperationalHistory, persistOperationalHistory, loadOperationalHistory } from "../services/storageService";
 import { formatDateTime } from "../simulation";
@@ -78,6 +78,48 @@ export function useSafeRoutePlanner(_mode: AppMode) {
     setError(null);
   }, []);
 
+  const applyRandomRoute = useCallback(() => {
+    const random = pickRandomSpRoute();
+    setForm((current) => ({
+      ...current,
+      originQuery: random.originQuery,
+      destinationQuery: random.destinationQuery,
+      origin: random.origin,
+      destination: random.destination,
+    }));
+    setError(null);
+  }, []);
+
+  const executePlan = useCallback(
+    async (
+      origin: GeocodeResult,
+      destination: GeocodeResult,
+      profile: PlannerProfile,
+      scenario: ScenarioKind,
+    ) => {
+      setIsLoading(true);
+      setLoadingPhase("weather");
+      setError(null);
+
+      try {
+        const result = await runPlan(origin, destination, profile, scenario);
+        if (result.warnings.length > 0) {
+          setError(result.warnings.join(" "));
+        }
+        return result;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Não foi possível calcular a rota. Tente novamente.";
+        setError(message);
+        setPlanned(null);
+        return null;
+      } finally {
+        setIsLoading(false);
+        setLoadingPhase("idle");
+      }
+    },
+    [runPlan],
+  );
+
   const calculate = useCallback(
     async (scenarioOverride?: ScenarioKind) => {
       if (!form.originQuery.trim()) {
@@ -107,27 +149,24 @@ export function useSafeRoutePlanner(_mode: AppMode) {
       }
 
       const scenario = scenarioOverride ?? (activeScenario === "clear" ? "real" : activeScenario);
-
-      setIsLoading(true);
-      setLoadingPhase("weather");
-      setError(null);
-
-      try {
-        const result = await runPlan(form.origin, form.destination, form.profile, scenario);
-        if (result.warnings.length > 0) {
-          setError(result.warnings.join(" "));
-        }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Não foi possível calcular a rota. Tente novamente.";
-        setError(message);
-        setPlanned(null);
-      } finally {
-        setIsLoading(false);
-        setLoadingPhase("idle");
-      }
+      await executePlan(form.origin, form.destination, form.profile, scenario);
     },
-    [activeScenario, form, runPlan],
+    [activeScenario, executePlan, form],
   );
+
+  const applyRandomAndCalculate = useCallback(async () => {
+    const random = pickRandomSpRoute();
+    setForm((current) => ({
+      ...current,
+      originQuery: random.originQuery,
+      destinationQuery: random.destinationQuery,
+      origin: random.origin,
+      destination: random.destination,
+    }));
+    setError(null);
+    const scenario = activeScenario === "clear" ? "real" : activeScenario;
+    await executePlan(random.origin, random.destination, form.profile, scenario);
+  }, [activeScenario, executePlan, form.profile]);
 
   const applyScenario = useCallback(
     async (scenario: ScenarioKind) => {
@@ -252,6 +291,8 @@ export function useSafeRoutePlanner(_mode: AppMode) {
     report,
     setReport,
     applyExample,
+    applyRandomRoute,
+    applyRandomAndCalculate,
     calculate,
     applyScenario,
     demoFloodExample,

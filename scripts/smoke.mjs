@@ -24,9 +24,7 @@ await page.reload({ waitUntil: "networkidle" });
 const initial = await page.evaluate(() => ({
   title: document.querySelector("h1")?.textContent,
   heroTitle: document.querySelector("#hero-title")?.textContent,
-  dataHub: Boolean(document.querySelector(".data-hub")),
-  scenarioSim: Boolean(document.querySelector(".scenario-simulator")),
-  scenarioStatus: Boolean(document.querySelector(".scenario-status")),
+  homeSteps: document.querySelectorAll(".home-start__step").length,
 }));
 
 await page.getByRole("button", { name: "Testar exemplo com enchente simulada" }).click();
@@ -65,7 +63,7 @@ const afterRain = await page.evaluate(() => ({
   statusText: document.querySelector(".scenario-status strong")?.textContent,
 }));
 
-await page.getByRole("button", { name: "Gerar relatório da simulação" }).click();
+await page.getByRole("button", { name: "Relatório" }).click();
 await page.waitForTimeout(400);
 
 const modal = await page.evaluate(() => ({
@@ -80,7 +78,8 @@ await page.getByRole("tab", { name: "Modo Gestor" }).click();
 await page.waitForTimeout(300);
 
 const manager = await page.evaluate(() => ({
-  kpis: document.querySelectorAll(".kpi").length,
+  decisionDashboard: Boolean(document.getElementById("decision-dashboard")),
+  decisionKpis: document.querySelectorAll(".decision-kpi").length,
   managerPanel: Boolean(document.getElementById("manager-panel")),
 }));
 
@@ -91,18 +90,17 @@ await browser.close();
 const result = { url, initial, afterFloodDemo, afterRain, modal, manager, consoleMessages, screenshotPath };
 
 const checks = [
-  initial.title === "OrbitTwin Cloud",
-  initial.heroTitle === "OrbitTwin",
-  initial.dataHub,
-  initial.scenarioSim,
-  initial.scenarioStatus,
+  initial.title === "OrbitTwin",
+  initial.heroTitle === "Para onde você vai?",
+  initial.homeSteps === 3,
   (afterFloodDemo.summary?.length ?? 0) > 20,
   afterFloodDemo.hasMap,
   afterFloodDemo.weather,
   (afterFloodDemo.statusText?.includes("Enchente") || afterFloodDemo.statusText?.includes("alagamento")) ?? false,
   (afterRain.statusText?.includes("Chuva") ?? false),
   modal.open && modal.title === "Relatório da simulação" && modal.hasScenario,
-  manager.kpis >= 5,
+  manager.decisionDashboard,
+  manager.decisionKpis >= 5,
   manager.managerPanel,
   consoleMessages.length === 0,
 ];

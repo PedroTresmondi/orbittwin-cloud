@@ -84,6 +84,47 @@ export const EXAMPLE_ROUTE = {
   destination: LOCAL_FALLBACK[5],
 };
 
+export type RandomRoutePair = {
+  originQuery: string;
+  destinationQuery: string;
+  origin: GeocodeResult;
+  destination: GeocodeResult;
+};
+
+/** Dois pontos distintos em SP — útil para testar rotas rapidamente */
+export function pickRandomSpRoute(): RandomRoutePair {
+  const places = [...LOCAL_FALLBACK];
+  const originIndex = Math.floor(Math.random() * places.length);
+  let destinationIndex = Math.floor(Math.random() * places.length);
+  let guard = 0;
+  while (
+    (destinationIndex === originIndex ||
+      sameCoords(places[originIndex], places[destinationIndex])) &&
+    guard < 20
+  ) {
+    destinationIndex = Math.floor(Math.random() * places.length);
+    guard += 1;
+  }
+
+  const origin = places[originIndex];
+  const destination = places[destinationIndex];
+
+  return {
+    origin,
+    destination,
+    originQuery: shortPlaceLabel(origin.label),
+    destinationQuery: shortPlaceLabel(destination.label),
+  };
+}
+
+function sameCoords(a: GeocodeResult, b: GeocodeResult): boolean {
+  return a.lat === b.lat && a.lng === b.lng;
+}
+
+function shortPlaceLabel(label: string): string {
+  return label.split(",")[0]?.trim() || label;
+}
+
 function buildSearchQuery(query: string): string {
   const lower = query.toLowerCase();
   if (lower.includes("são paulo") || lower.includes("sao paulo") || lower.includes("sp")) {
