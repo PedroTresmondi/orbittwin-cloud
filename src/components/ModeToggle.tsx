@@ -15,7 +15,7 @@ export function ModeToggle({ mode, onChange }: ModeToggleProps) {
         className={`mode-toggle__btn${mode === "citizen" ? " is-active" : ""}`}
         onClick={() => onChange("citizen")}
       >
-        Modo Cidadão
+        Cidadão
       </button>
       <button
         type="button"
@@ -24,7 +24,7 @@ export function ModeToggle({ mode, onChange }: ModeToggleProps) {
         className={`mode-toggle__btn${mode === "manager" ? " is-active" : ""}`}
         onClick={() => onChange("manager")}
       >
-        Modo Gestor
+        Gestor
       </button>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AppNavDrawer } from "./components/AppNavDrawer";
 import { Header } from "./components/Header";
-import { ScenarioStatusBadge } from "./components/ScenarioStatusBadge";
 import { DecisionDashboard } from "./components/DecisionDashboard";
 import { ManagerView } from "./components/ManagerView";
 import { SimulationReportModal } from "./components/SimulationReportModal";
@@ -14,6 +14,7 @@ import { CITIZEN_MAP_LAYERS, MANAGER_MAP_LAYERS } from "./types";
 
 function App() {
   const [mode, setMode] = useState<AppMode>("citizen");
+  const [navOpen, setNavOpen] = useState(false);
   const [mapLayers, setMapLayers] = useState<MapLayerVisibility>(CITIZEN_MAP_LAYERS);
   const [state, setState] = useState<OrbitTwinState>(() => {
     const initial = createInitialState();
@@ -51,8 +52,20 @@ function App() {
 
   const handleModeChange = (next: AppMode) => {
     setMode(next);
-    if (next === "manager") {
-      window.setTimeout(() => scrollTo("decision-dashboard"), 200);
+    if (next === "manager" && planner.planned) {
+      window.setTimeout(() => scrollTo("decision-dashboard"), 300);
+    }
+  };
+
+  const handleNav = (target: "planner" | "dashboard" | "demo") => {
+    if (target === "planner") scrollTo("planner-section");
+    if (target === "dashboard") {
+      handleModeChange("manager");
+      scrollTo("decision-dashboard");
+    }
+    if (target === "demo") {
+      scrollTo("planner-section");
+      void planner.demoGsDetourExample();
     }
   };
 
@@ -68,33 +81,49 @@ function App() {
     setState((current) => ({ ...current, selectedRegion: region }));
   };
 
+  const isManager = mode === "manager";
+
   return (
     <>
       <BackgroundLayers />
-      <Header mode={mode} onModeChange={handleModeChange} />
-      <ScenarioStatusBadge scenario={planner.activeScenario} planned={planner.planned} />
+      <Header mode={mode} onModeChange={handleModeChange} onMenuOpen={() => setNavOpen(true)} />
+      <AppNavDrawer
+        open={navOpen}
+        mode={mode}
+        onClose={() => setNavOpen(false)}
+        onModeChange={handleModeChange}
+        onNavigate={handleNav}
+      />
 
-      <main className="dashboard">
+      <main className={`app-main${isManager ? " app-main--stack" : ""}`}>
         <SafeRoutePlanner
           mode={mode}
           planner={planner}
           mapLayers={mapLayers}
           onLayersChange={setMapLayers}
           onOpenReport={planner.openReport}
+          onDemoGsDetour={() => void planner.demoGsDetourExample()}
           onDemoFlood={() => void planner.demoFloodExample()}
           onOpenManager={() => handleModeChange("manager")}
+          onScrollToIndicators={() => scrollTo("decision-dashboard")}
+          onGsDemoComplete={() => {
+            handleModeChange("manager");
+            scrollTo("decision-dashboard");
+          }}
         />
 
-        {mode === "manager" && (
-          <div id="manager-panel" className="manager-panel">
-            <DecisionDashboard snapshot={decisionSnapshot} />
-            {!planner.planned && (
-              <p className="manager-panel__hint card" role="status">
-                Calcule uma rota acima para vincular KPIs, alertas e recomendação ao trajeto em tempo real.
+        {isManager && (
+          <div id="manager-panel" className="manager-stack">
+            {planner.planned ? (
+              <DecisionDashboard snapshot={decisionSnapshot} />
+            ) : (
+              <p className="manager-stack__hint glass-surface" role="status">
+                Calcule uma rota para exibir o painel de decisão (KPIs, mapa urbano, alertas).
               </p>
             )}
-            <details className="manager-panel__legacy">
-              <summary>Monitoramento orbital e infraestrutura</summary>
+
+            <details className="manager-stack__legacy glass-surface">
+              <summary>Monitoramento orbital (legado)</summary>
               <ManagerView
                 state={state}
                 isSimulating={isSimulating}
@@ -117,19 +146,16 @@ function App() {
 function BackgroundLayers() {
   return (
     <>
+      <div className="bg-mesh" aria-hidden="true" />
       <div className="bg-grid" aria-hidden="true" />
       <div className="bg-stars" aria-hidden="true" />
-      <div className="bg-orbit" aria-hidden="true">
-        <span className="bg-orbit__ring" />
-        <span className="bg-orbit__satellite" />
-      </div>
     </>
   );
 }
 
 function Footer() {
   return (
-    <footer className="footer">
+    <footer className="footer footer--glass">
       <p>OrbitTwin · Global Solution 2026</p>
       <p className="footer__sub">OSRM · Open-Meteo · NASA FIRMS · Leaflet</p>
     </footer>

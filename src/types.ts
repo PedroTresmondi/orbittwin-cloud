@@ -61,6 +61,7 @@ export type RouteRiskResult = {
   recommendation: string;
   explanation: string[];
   crossedZones: string[];
+  avoidedZoneNames?: string[];
 };
 
 export type WeatherForecast = {
@@ -90,6 +91,8 @@ export type PlannedRouteResult = {
   dataSources: DataSourceEntry[];
   dataHub: DataHubEntry[];
   environmental: EnvironmentalContext;
+  /** Demonstração GS com desvio em zona crítica */
+  gsDetourDemo?: boolean;
 };
 
 export type RouteSource = "osrm" | "fallback";

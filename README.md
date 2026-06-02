@@ -16,13 +16,13 @@ Projeto acadêmico · **Global Solution 2026** (FIAP) · Cloud Solutions & Scala
 
 ### Roteiro de apresentação (~60s)
 
-1. Abra o site → clique em **Aleatório e calcular** (origem/destino + rota em um passo).
-2. Leia o **resumo da rota segura** (risco convencional vs segura, minutos a mais).
-3. Abra **Simular risco na rota** → **Enchente** e mostre o mapa mudando.
-4. Expanda **Fontes de dados** → destaque Real (OSRM, Open-Meteo, NASA FIRMS).
-5. **Modo Gestor** → painel **Indicadores para tomada de decisão** (KPIs, mapa, alertas, recomendação IA).
+Use a barra **Roteiro GS** (aparece após a demo) ou siga:
 
-Atalho alternativo: **Exemplo com enchente** (Paulista → Santo Amaro pré-configurado).
+1. **Demo GS: desvio crítico** (Barra Funda → Tatuapé).
+2. Aba **Mapa** — vermelho pela **Marginal Tietê** (zona pulsando); ciano contorna.
+3. Compare os cards: convencional **Crítico** vs segura **Baixo/Médio** e % de exposição.
+4. Clique passo **Gestor** na barra (ou toggle Gestor) → KPIs, mapa urbano, alertas.
+5. Opcional: passo **Cenário** ou **+ Enchente** para simulação de alagamento.
 
 ---
 

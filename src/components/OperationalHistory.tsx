@@ -18,7 +18,7 @@ type OperationalHistoryProps = {
 export function OperationalHistory({ history, onSelect, onClear, variant = "cards" }: OperationalHistoryProps) {
   if (history.length === 0) {
     return (
-      <section className="history-panel card">
+      <section className="history-panel glass-surface">
         <h3>Histórico operacional</h3>
         <p className="route-history__empty">
           Nenhuma rota calculada ainda. Use <strong>Calcular rota segura</strong> ou{" "}
@@ -29,7 +29,7 @@ export function OperationalHistory({ history, onSelect, onClear, variant = "card
   }
 
   return (
-    <section className="history-panel card">
+    <section className="history-panel glass-surface">
       <header className="history-panel__head">
         <h3>Histórico operacional</h3>
         <div className="history-panel__actions">
