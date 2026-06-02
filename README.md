@@ -1,173 +1,114 @@
 # OrbitTwin Cloud
 
-Dashboard web de gêmeo digital urbano para monitoramento de riscos ambientais, desenvolvido para a **Global Solution 2026** — disciplina **Cloud Solutions & Scalable Infrastructure**.
+Dashboard web de gêmeo digital urbano para monitoramento de riscos ambientais, desenvolvido para a **Global Solution 2026** na disciplina **Cloud Solutions & Scalable Infrastructure**.
 
 ## Descrição
 
-O **OrbitTwin Cloud** simula um painel operacional profissional que integra **dados espaciais**, **sensores IoT** e **inteligência artificial** para monitorar riscos ambientais em áreas urbanas, com foco em **alagamentos**. O dashboard apresenta indicadores em tempo real (simulados), mapa interativo com seis regiões, análise detalhada por zona, alertas inteligentes, produtos espaciais derivados e visualização da infraestrutura cloud de entrega.
+O **OrbitTwin Cloud** simula uma central operacional urbana que integra **dados espaciais**, **sensores IoT**, **inteligência artificial** e **rotas alternativas seguras** para monitorar riscos ambientais em áreas urbanas, com foco em alagamentos.
 
-## Relação com a Indústria Espacial
+O protótipo foi migrado para **React + TypeScript + Vite**, mantendo a identidade visual dark/espacial e tornando a base mais modular, tipada e fácil de evoluir.
 
-A solução está conectada ao tema **Indústria Espacial** ao utilizar:
+## Funcionalidades
 
-- **Imagens e telemetria de satélites** (GOES-16, Sentinel-2, Landsat-9, COSMO-SkyMed, SAOCOM-1A) para mapeamento de áreas de risco
-- **Órbitas LEO** e geoestacionária para redundância de sensores terrestres
-- **Produtos geoespaciais simulados** (NDWI urbano, precipitação acumulada, temperatura de superfície)
-- **Gêmeo digital urbano** alimentado por modelos preditivos de IA
-- Infraestrutura **cloud escalável** na Microsoft Azure via containers Docker
+- KPIs de risco urbano, sensores, satélites simulados e alertas críticos.
+- Mapa urbano interativo com seis regiões monitoradas.
+- Painel de análise da região selecionada com telemetria, chuva, sensores e recomendação preventiva.
+- Seção **Rotas Alternativas Seguras** com origem, destino, perfil operacional, recomendação e histórico de decisões.
+- Motor de rotas com OSRM público quando disponível e fallback local para manter a operação funcional sem rede.
+- Modelo de risco por exposição a área crítica, proximidade de bloqueios e perfil de deslocamento.
+- Mapa real com Leaflet + OpenStreetMap, rota convencional em vermelho, rota segura em ciano, área de risco e bloqueios.
+- Simulação de nova leitura orbital com variação de riscos, sensores, dados espaciais, alertas e rotas.
+- Geração independente de rota segura para a região ativa, com fonte do cálculo e confiança da recomendação.
+- Dados espaciais simulados com mini gráficos CSS.
+- Fluxo visual de infraestrutura cloud containerizada.
 
-## Funcionalidades do Dashboard
-
-### Header institucional
-- Nome **OrbitTwin Cloud** com animação orbital
-- Subtítulo explicativo sobre gêmeo digital, dados espaciais, IoT e IA
-- Badge **Global Solution 2026 | Indústria Espacial**
-- Status **Publicado em Azure Container Instances**
-
-### Indicadores principais (KPIs)
-- Risco médio da cidade (com barra de progresso)
-- Regiões monitoradas
-- Sensores ativos (rede IoT)
-- Satélites simulados
-- Alertas críticos
-
-### Mapa urbano interativo
-Seis regiões clicáveis com níveis de risco (Baixo, Médio, Alto, Crítico):
-- Centro Expandido
-- Zona Leste
-- Zona Oeste
-- Zona Sul
-- Marginal Tietê
-- Área de Encosta
-
-### Painel "Análise da Região"
-Ao clicar em uma região, exibe:
-- Nome e nível de risco
-- Gráficos de barras CSS (índice de risco, chuva, sensores)
-- Chuva prevista
-- Sensores ativos
-- Fonte espacial simulada
-- Recomendação preventiva
-
-### Dados espaciais simulados
-- NDWI urbano
-- Precipitação acumulada
-- Temperatura de superfície
-- Umidade estimada
-- Cobertura de nuvens
-
-Cada métrica inclui mini-gráficos de barras construídos apenas com HTML/CSS.
-
-### Alertas Inteligentes
-Cards com horário, tipo de alerta, região afetada e recomendação preventiva.
-
-### Infraestrutura Cloud
-Fluxo visual: **Docker → Azure Container Registry → Azure Container Instances → Nginx (porta 80) → DNS público**.
-
-### Simulação orbital
-Botão **"Simular nova leitura orbital"** atualiza dinamicamente:
-- Todos os KPIs e barras de progresso
-- Níveis de risco das regiões no mapa
-- Dados espaciais e mini-gráficos
-- Alertas inteligentes
-- Timestamp da última leitura
-
-## Tecnologias Utilizadas
+## Tecnologias
 
 | Camada | Tecnologia |
 |--------|------------|
-| Frontend | HTML5, CSS3, JavaScript (vanilla) |
-| Servidor web | Nginx (Alpine) |
-| Containerização | Docker |
-| Cloud (deploy) | Azure Container Registry (ACR) + Azure Container Instances (ACI) |
+| Frontend | React, TypeScript, Vite |
+| Mapa | Leaflet + OpenStreetMap |
+| Rotas | OSRM Route Service + fallback local |
+| Estilo | CSS customizado |
+| Build | Vite |
+| Servidor web | Nginx Alpine |
+| Containerização | Docker multi-stage |
+| Cloud alvo | Azure Container Registry + Azure Container Instances |
 
-> Sem frameworks, sem React, sem Vue e sem dependências externas.
+## Estrutura
 
-## Como rodar localmente (sem Docker)
+```text
+orbittwin-cloud/
+├── src/
+│   ├── App.tsx          # Composição dos componentes do dashboard
+│   ├── data.ts          # Dados iniciais e constantes tipadas
+│   ├── simulation.ts    # Helpers puros de simulação e cálculo
+│   ├── services/
+│   │   ├── riskModel.ts   # Exposição, distância, tempo e confiança da rota
+│   │   ├── routeEngine.ts # OSRM + fallback local
+│   │   └── storage.ts     # Histórico operacional em localStorage
+│   ├── types.ts         # Tipos do domínio OrbitTwin
+│   └── main.tsx         # Entrada React
+├── index.html           # Entrada Vite
+├── style.css            # Identidade visual e layout responsivo
+├── package.json         # Scripts e dependências
+├── tsconfig.json        # Configuração TypeScript
+├── vite.config.ts       # Configuração Vite
+├── Dockerfile           # Build React + Nginx
+└── README.md
+```
 
-1. Clone ou baixe este repositório
-2. Abra o arquivo `index.html` diretamente no navegador
-
-Ou, usando um servidor HTTP simples:
+## Rodar localmente
 
 ```bash
-# Python 3
-python -m http.server 8080
+npm install
+npm run dev
+```
+
+Acesse: [http://127.0.0.1:5173](http://127.0.0.1:5173)
+
+## Build de produção
+
+```bash
+npm run build
+```
+
+Os arquivos finais são gerados em `dist/`.
+
+## Smoke test visual
+
+Com o servidor local rodando, execute:
+
+```bash
+APP_URL=http://127.0.0.1:5173/ npm run smoke
+```
+
+No PowerShell:
+
+```powershell
+$env:APP_URL='http://127.0.0.1:5173/'; npm run smoke
+```
+
+O teste abre a aplicação com Playwright, valida o mapa Leaflet, clica em uma região crítica, altera o perfil operacional, gera uma rota segura, confirma o histórico e salva uma captura em uma pasta temporária.
+
+## Rodar com Docker
+
+```bash
+docker build -t orbittwin-cloud:v2 .
+docker run -d -p 8080:80 --name orbittwin-cloud orbittwin-cloud:v2
 ```
 
 Acesse: [http://localhost:8080](http://localhost:8080)
 
-## Como rodar com Docker
+## Publicação na Azure
 
-Na pasta raiz do projeto (`orbittwin-cloud/`):
+Fluxo resumido:
 
-```bash
-# Build da imagem
-docker build -t orbittwin-cloud:v1 .
-
-# Executar o container
-docker run -d -p 8080:80 --name orbittwin-cloud orbittwin-cloud:v1
-```
-
-### Como acessar
-
-Abra no navegador: **[http://localhost:8080](http://localhost:8080)**
-
-### Comandos úteis
-
-```bash
-# Ver containers em execução
-docker ps
-
-# Parar o container
-docker stop orbittwin-cloud
-
-# Remover o container
-docker rm orbittwin-cloud
-
-# Ver logs
-docker logs orbittwin-cloud
-
-# Rebuild após alterações
-docker build -t orbittwin-cloud:v1 .
-docker rm -f orbittwin-cloud
-docker run -d -p 8080:80 --name orbittwin-cloud orbittwin-cloud:v1
-```
-
-## Publicação na Azure (ACR + ACI)
-
-Fluxo resumido para deploy em produção:
-
-1. **Build local** da imagem Docker (`orbittwin-cloud:v1`)
-2. **Azure Container Registry (ACR)** — criar registry e fazer push da imagem:
-   ```bash
-   az acr login --name <seu-registry>
-   docker tag orbittwin-cloud:v1 <seu-registry>.azurecr.io/orbittwin-cloud:v1
-   docker push <seu-registry>.azurecr.io/orbittwin-cloud:v1
-   ```
-3. **Azure Container Instances (ACI)** — criar instância a partir da imagem no ACR:
-   ```bash
-   az container create \
-     --resource-group <seu-rg> \
-     --name orbittwin-cloud \
-     --image <seu-registry>.azurecr.io/orbittwin-cloud:v1 \
-     --ports 80 \
-     --dns-name-label orbittwin-cloud \
-     --registry-login-server <seu-registry>.azurecr.io
-   ```
-4. O usuário acessa o dashboard pelo **IP público ou FQDN** da instância ACI; o container **Nginx** entrega os arquivos estáticos na **porta 80**.
-
-## Estrutura do Projeto
-
-```
-orbittwin-cloud/
-├── index.html      # Estrutura do dashboard
-├── style.css       # Tema dark/espacial profissional
-├── script.js       # Interatividade e simulação orbital
-├── Dockerfile      # Imagem Nginx Alpine
-└── README.md       # Documentação
-```
+1. Gerar imagem Docker local.
+2. Enviar a imagem para o Azure Container Registry.
+3. Criar uma instância no Azure Container Instances expondo a porta 80.
+4. O Nginx entrega o build estático gerado pelo Vite.
 
 ## Autor
 
-Projeto acadêmico — Global Solution 2026 · FIAP
+Projeto acadêmico - Global Solution 2026 · FIAP
