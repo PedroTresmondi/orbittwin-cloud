@@ -7,8 +7,8 @@ export async function getWeatherForecast(lat: number, lng: number): Promise<Weat
     const params = new URLSearchParams({
       latitude: String(lat),
       longitude: String(lng),
-      current: "temperature_2m,relative_humidity_2m,precipitation",
-      hourly: "precipitation,precipitation_probability,temperature_2m,relative_humidity_2m",
+      current: "temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m",
+      hourly: "precipitation,precipitation_probability,temperature_2m,relative_humidity_2m,wind_speed_10m",
       forecast_hours: "3",
       timezone: "America/Sao_Paulo",
     });
@@ -32,9 +32,11 @@ export async function getWeatherForecast(lat: number, lng: number): Promise<Weat
       precipitationProbability: Math.round(precipitationProbability),
       temperature: round(data.current?.temperature_2m ?? hourly?.temperature_2m?.[0] ?? 24, 1),
       humidity: Math.round(data.current?.relative_humidity_2m ?? hourly?.relative_humidity_2m?.[0] ?? 70),
+      windSpeed: round(data.current?.wind_speed_10m ?? hourly?.wind_speed_10m?.[0] ?? 12, 1),
       source: "Open-Meteo",
       fetchedAt: new Date().toISOString(),
       isSimulated: false,
+      dataStatus: "real",
     };
   } catch {
     return buildMockForecast(lat, lng);
@@ -62,9 +64,11 @@ function buildMockForecast(lat: number, lng: number): WeatherForecast {
     precipitationProbability: Math.round(40 + seed * 50),
     temperature: round(22 + seed * 8, 1),
     humidity: Math.round(65 + seed * 25),
+    windSpeed: round(8 + seed * 14, 1),
     source: "OrbitTwin simulado",
     fetchedAt: new Date().toISOString(),
     isSimulated: true,
+    dataStatus: "fallback",
   };
 }
 
@@ -88,11 +92,13 @@ type OpenMeteoResponse = {
     temperature_2m?: number;
     relative_humidity_2m?: number;
     precipitation?: number;
+    wind_speed_10m?: number;
   };
   hourly?: {
     precipitation?: number[];
     precipitation_probability?: number[];
     temperature_2m?: number[];
     relative_humidity_2m?: number[];
+    wind_speed_10m?: number[];
   };
 };

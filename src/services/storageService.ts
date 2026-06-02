@@ -9,7 +9,7 @@ export function loadOperationalHistory(): OperationalEvent[] {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        return parsed.filter(isOperationalEvent).slice(0, MAX_HISTORY_ITEMS);
+        return parsed.filter(isOperationalEvent).map(ensureEventSources).slice(0, MAX_HISTORY_ITEMS);
       }
     }
 
@@ -103,6 +103,14 @@ function normalizeLegacyEvent(raw: Record<string, unknown>): OperationalEvent | 
     confidence: typeof raw.confidence === "number" ? raw.confidence : 80,
     weatherSource: typeof raw.weatherSource === "string" ? raw.weatherSource : "—",
     geocodeSource: typeof raw.geocodeSource === "string" ? raw.geocodeSource : "—",
+    sources: Array.isArray(raw.sources) && raw.sources.length > 0
+      ? raw.sources.filter((s): s is string => typeof s === "string")
+      : [
+          typeof raw.geocodeSource === "string" ? raw.geocodeSource : "Geocoding",
+          raw.source === "osrm" ? "OSRM" : "Roteamento (fallback)",
+          typeof raw.weatherSource === "string" ? raw.weatherSource : "Clima",
+        ],
+    simulation: raw.simulation && typeof raw.simulation === "object" ? (raw.simulation as OperationalEvent["simulation"]) : undefined,
   };
 }
 
@@ -128,8 +136,17 @@ function isOperationalEvent(value: unknown): value is OperationalEvent {
     typeof candidate.riskReduction === "number" &&
     typeof candidate.confidence === "number" &&
     typeof candidate.weatherSource === "string" &&
-    typeof candidate.geocodeSource === "string"
+    typeof candidate.geocodeSource === "string" &&
+    (candidate.sources === undefined || Array.isArray(candidate.sources))
   );
+}
+
+function ensureEventSources(event: OperationalEvent): OperationalEvent {
+  if (event.sources.length > 0) return event;
+  return {
+    ...event,
+    sources: [event.geocodeSource, event.source === "osrm" ? "OSRM" : "Roteamento (fallback)", event.weatherSource],
+  };
 }
 
 function isTravelProfile(value: unknown): value is OperationalEvent["profile"] {

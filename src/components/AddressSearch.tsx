@@ -24,6 +24,7 @@ export function AddressSearch({
   const [suggestions, setSuggestions] = useState<GeocodeResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [noResults, setNoResults] = useState(false);
   const debounceRef = useRef<number | undefined>(undefined);
   const wrapRef = useRef<HTMLDivElement | null>(null);
 
@@ -31,6 +32,7 @@ export function AddressSearch({
     window.clearTimeout(debounceRef.current);
     if (value.trim().length < 2) {
       setSuggestions([]);
+      setNoResults(false);
       return;
     }
 
@@ -40,6 +42,7 @@ export function AddressSearch({
         .then((results) => {
           setSuggestions(results);
           setIsOpen(results.length > 0);
+          setNoResults(results.length === 0 && value.trim().length >= 3);
         })
         .finally(() => setIsSearching(false));
     }, 450);
@@ -81,6 +84,11 @@ export function AddressSearch({
           {selected.source === "nominatim" ? "📍" : "◎"} {selected.label.slice(0, 60)}
           {selected.label.length > 60 ? "…" : ""}
         </span>
+      )}
+      {noResults && !isSearching && !selected && value.trim().length >= 3 && (
+        <p className="address-search__empty" role="status">
+          Não encontramos esse endereço. Tente informar bairro, cidade ou ponto de referência.
+        </p>
       )}
       {isOpen && suggestions.length > 0 && (
         <ul className="address-search__list" role="listbox">

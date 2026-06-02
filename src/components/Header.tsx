@@ -1,5 +1,5 @@
 import type { AppMode } from "../types";
-import { ModeToggle } from "./ModeToggle";
+import { ViewModeToggle } from "./ViewModeToggle";
 
 type HeaderProps = {
   mode: AppMode;
@@ -18,11 +18,11 @@ export function Header({ mode, onModeChange }: HeaderProps) {
           </div>
           <div className="header__titles">
             <h1>OrbitTwin Cloud</h1>
-            <p className="header__subtitle">Gêmeo digital urbano com dados espaciais, sensores IoT e IA</p>
+            <p className="header__subtitle">Google Maps de segurança climática · São Paulo</p>
           </div>
         </div>
         <div className="header__meta">
-          <ModeToggle mode={mode} onChange={onModeChange} />
+          <ViewModeToggle mode={mode} onChange={onModeChange} />
           <span className="badge badge--gs">Global Solution 2026 | Indústria Espacial</span>
           <span className="badge badge--azure">
             <span className="status-dot" />

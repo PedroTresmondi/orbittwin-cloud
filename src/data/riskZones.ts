@@ -126,6 +126,36 @@ export const RISK_ZONES: RiskZone[] = [
       [-23.5425, -46.7315],
     ],
   },
+  {
+    id: "pinheiros",
+    name: "Pinheiros",
+    regionKey: "oeste",
+    riskLevel: "medium",
+    type: "flood",
+    description: "Várzea do Pinheiros com pontos de alagamento em chuvas fortes.",
+    updatedAt: "2026-06-01T12:00:00Z",
+    polygon: [
+      [-23.558, -46.688],
+      [-23.552, -46.695],
+      [-23.565, -46.702],
+      [-23.571, -46.692],
+    ],
+  },
+  {
+    id: "santo-amaro",
+    name: "Santo Amaro",
+    regionKey: "sul",
+    riskLevel: "medium",
+    type: "flood",
+    description: "Corredor sul com drenagem limitada próximo à estação e vias expressas.",
+    updatedAt: "2026-06-01T12:00:00Z",
+    polygon: [
+      [-23.648, -46.708],
+      [-23.642, -46.718],
+      [-23.658, -46.722],
+      [-23.662, -46.712],
+    ],
+  },
 ];
 
 export function getRiskZonesForRegion(regionKey: RegionKey): RiskZone[] {

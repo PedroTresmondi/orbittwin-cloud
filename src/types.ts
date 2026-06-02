@@ -1,3 +1,18 @@
+import type { DataHubEntry, EnvironmentalContext } from "./types/environmental";
+
+export type {
+  DataFeedStatus,
+  DataHubBadge,
+  DataHubEntry,
+  EnvironmentalContext,
+  FireHotspot,
+  FiresFeedMeta,
+  MapBounds,
+  RainStation,
+  SatelliteLayer,
+  WeatherDataStatus,
+} from "./types/environmental";
+
 export type RiskLevel = "low" | "medium" | "high" | "critical";
 
 export type RegionKey = "centro" | "oeste" | "leste" | "tiete" | "encosta" | "sul";
@@ -12,12 +27,17 @@ export type PlannerProfile = TravelProfile;
 
 export type GeocodeSource = "nominatim" | "fallback";
 
+export type Coordinate = {
+  lat: number;
+  lng: number;
+};
+
 export type GeocodeResult = {
   label: string;
   lat: number;
   lng: number;
-  type: string;
-  importance: number;
+  type?: string;
+  importance?: number;
   source: GeocodeSource;
 };
 
@@ -49,20 +69,51 @@ export type WeatherForecast = {
   precipitationProbability: number;
   temperature: number;
   humidity: number;
+  windSpeed?: number;
   source: string;
   fetchedAt: string;
   isSimulated: boolean;
+  dataStatus: "real" | "fallback";
 };
 
 export type PlannedRouteResult = {
   route: RouteData;
   weather: WeatherForecast;
+  /** Clima original da API antes de overlay de cenário */
+  baseWeather?: WeatherForecast;
   risk: RouteRiskResult;
   usedFallback: boolean;
   warnings: string[];
+  scenario: ScenarioKind;
+  scenarioLabel: string;
+  dataMode: DataMode;
+  dataSources: DataSourceEntry[];
+  dataHub: DataHubEntry[];
+  environmental: EnvironmentalContext;
 };
 
 export type RouteSource = "osrm" | "fallback";
+
+export type ScenarioKind =
+  | "real"
+  | "heavy_rain"
+  | "flood"
+  | "blockage"
+  | "landslide"
+  | "multiple"
+  | "clear";
+
+export type DataMode = "real" | "simulated" | "hybrid";
+
+export type DataSourceStatus = "online" | "fallback" | "simulated";
+
+export type DataSourceEntry = {
+  id: "map" | "routing" | "geocoding" | "weather" | "risk";
+  label: string;
+  provider: string;
+  status: DataSourceStatus;
+  note?: string;
+};
 
 export type AppMode = "citizen" | "manager";
 
@@ -73,7 +124,10 @@ export type MapLayerId =
   | "blocks"
   | "sensors"
   | "facilities"
-  | "weather";
+  | "weather"
+  | "rainStations"
+  | "fireHotspots"
+  | "satelliteLayers";
 
 export type MapLayerVisibility = Record<MapLayerId, boolean>;
 
@@ -146,6 +200,7 @@ export type RouteMapModel = {
   conventionalPath: GeoPoint[];
   safePath: GeoPoint[];
   blocks: GeoPoint[];
+  simulatedZoneIds?: string[];
 };
 
 export type RouteData = {
@@ -196,6 +251,28 @@ export type RouteEngineResult = {
   error?: string;
 };
 
+export type RouteSimulationHistory = {
+  id: string;
+  createdAt: string;
+  originLabel: string;
+  destinationLabel: string;
+  profile: string;
+  scenarioType: ScenarioKind;
+  dataMode: DataMode;
+  conventionalTimeMinutes: number;
+  safeTimeMinutes: number;
+  conventionalDistanceKm: number;
+  safeDistanceKm: number;
+  conventionalRisk: string;
+  safeRisk: string;
+  exposureReduction: number;
+  confidence: number;
+  recommendation: string;
+  sources: string[];
+  realWeatherSummary?: string;
+  simulatedWeatherSummary?: string;
+};
+
 export type OperationalEvent = {
   id: string;
   timestamp: string;
@@ -216,6 +293,8 @@ export type OperationalEvent = {
   confidence: number;
   weatherSource: string;
   geocodeSource: string;
+  sources: string[];
+  simulation?: RouteSimulationHistory;
   plannerSnapshot?: PlannedRouteResult;
 };
 
@@ -224,6 +303,12 @@ export type SimulationReport = {
   origin: string;
   destination: string;
   profile: TravelProfile;
+  scenario: ScenarioKind;
+  scenarioLabel: string;
+  dataMode: DataMode;
+  dataSources: DataSourceEntry[];
+  realDataUsed: string[];
+  simulatedDataUsed: string[];
   region: string;
   recommendedRoute: string;
   conventionalRisk: number;
@@ -260,6 +345,37 @@ export const DEFAULT_MAP_LAYERS: MapLayerVisibility = {
   sensors: true,
   facilities: true,
   weather: true,
+  rainStations: false,
+  fireHotspots: false,
+  satelliteLayers: false,
+};
+
+/** Modo Cidadão — menos camadas por padrão */
+export const CITIZEN_MAP_LAYERS: MapLayerVisibility = {
+  conventional: true,
+  safe: true,
+  riskAreas: true,
+  blocks: false,
+  sensors: false,
+  facilities: false,
+  weather: false,
+  rainStations: false,
+  fireHotspots: false,
+  satelliteLayers: false,
+};
+
+/** Modo Gestor — visão operacional completa */
+export const MANAGER_MAP_LAYERS: MapLayerVisibility = {
+  conventional: true,
+  safe: true,
+  riskAreas: true,
+  blocks: true,
+  sensors: true,
+  facilities: true,
+  weather: true,
+  rainStations: true,
+  fireHotspots: true,
+  satelliteLayers: false,
 };
 
 export const PLANNER_PROFILE_LABELS: Record<PlannerProfile, string> = {

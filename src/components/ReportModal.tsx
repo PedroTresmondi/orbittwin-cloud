@@ -30,6 +30,30 @@ export function ReportModal({ report, onClose }: ReportModalProps) {
 
         <div className="modal__body">
           <section className="report-block">
+            <h3>Cenário e fontes</h3>
+            <dl className="report-dl">
+              <div>
+                <dt>Cenário ativo</dt>
+                <dd>{report.scenarioLabel}</dd>
+              </div>
+              <div>
+                <dt>Modo de dados</dt>
+                <dd>{report.dataMode === "real" ? "Real" : report.dataMode === "hybrid" ? "Híbrido" : "Simulado"}</dd>
+              </div>
+            </dl>
+            {report.realDataUsed.length > 0 && (
+              <p className="report-message">
+                <strong>Dados reais:</strong> {report.realDataUsed.join(" · ")}
+              </p>
+            )}
+            {report.simulatedDataUsed.length > 0 && (
+              <p className="report-message">
+                <strong>Dados simulados:</strong> {report.simulatedDataUsed.join(" · ")}
+              </p>
+            )}
+          </section>
+
+          <section className="report-block">
             <h3>Trajeto</h3>
             <dl className="report-dl">
               <div>
