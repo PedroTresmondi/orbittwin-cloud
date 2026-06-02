@@ -325,6 +325,15 @@ function buildMapZones(zones: RiskZone[], planned: PlannedRouteResult | null): U
   }));
 }
 
+const REGION_TO_ZONE_ID: Record<string, string> = {
+  centro: "centro-expandido",
+  leste: "zona-leste",
+  tiete: "marginal-tiete",
+  encosta: "area-encosta",
+  sul: "zona-sul",
+  oeste: "zona-oeste",
+};
+
 function buildMapMarkers(
   planned: PlannedRouteResult | null,
   scenarioActive: boolean,
@@ -333,22 +342,38 @@ function buildMapMarkers(
     id: s.id,
     label: s.name,
     type: "sensor" as const,
+    zoneId: REGION_TO_ZONE_ID[s.region] ?? "centro-expandido",
   }));
 
   if (planned?.environmental.rainStations.length) {
-    planned.environmental.rainStations.slice(0, 2).forEach((st) => {
-      markers.push({ id: st.id, label: st.name, type: "station" });
+    planned.environmental.rainStations.slice(0, 2).forEach((st, i) => {
+      markers.push({
+        id: st.id,
+        label: st.name,
+        type: "station",
+        zoneId: i === 0 ? "marginal-tiete" : "centro-expandido",
+      });
     });
   }
 
   if (planned?.environmental.fireHotspots.length) {
-    planned.environmental.fireHotspots.slice(0, 2).forEach((h) => {
-      markers.push({ id: h.id, label: "Foco de calor", type: "fire" });
+    planned.environmental.fireHotspots.slice(0, 2).forEach((h, i) => {
+      markers.push({
+        id: h.id,
+        label: "Foco de calor",
+        type: "fire",
+        zoneId: i === 0 ? "zona-leste" : "marginal-tiete",
+      });
     });
   }
 
   if (scenarioActive) {
-    markers.push({ id: "block-1", label: "Bloqueio simulado", type: "block" });
+    markers.push({
+      id: "block-1",
+      label: "Bloqueio simulado",
+      type: "block",
+      zoneId: "centro-expandido",
+    });
   }
 
   return markers.slice(0, 10);

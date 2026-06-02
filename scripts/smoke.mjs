@@ -24,11 +24,11 @@ await page.reload({ waitUntil: "networkidle" });
 const initial = await page.evaluate(() => ({
   title: document.querySelector("h1")?.textContent,
   heroTitle: document.querySelector("#hero-title")?.textContent,
-  homeSteps: document.querySelectorAll(".home-start__step").length,
+  stepHint: document.querySelector(".home-start__step-hint")?.textContent,
 }));
 
-await page.getByRole("button", { name: "Testar exemplo com enchente simulada" }).click();
-await page.waitForSelector(".route-summary__message", { timeout: 60000 });
+await page.getByRole("button", { name: "Demonstração GS: desvio em área crítica" }).click();
+await page.waitForSelector(".result-strip__verdict", { timeout: 60000 });
 await page.waitForFunction(
   () => {
     const calc = document.querySelector(".btn-orbit--large");
@@ -41,29 +41,43 @@ await page.waitForFunction(
 );
 
 const afterFloodDemo = await page.evaluate(() => ({
-  summary: document.querySelector(".route-summary__message")?.textContent,
+  summary: document.querySelector(".result-strip__verdict")?.textContent,
   hasMap: Boolean(document.querySelector(".routes-map.leaflet-container")),
-  weather: Boolean(document.querySelector(".weather-panel")),
-  modeTag: document.querySelector(".route-summary__mode")?.textContent,
-  statusText: document.querySelector(".scenario-status strong")?.textContent,
+  weather: false,
+  modeTag: document.querySelector(".result-strip__mode")?.textContent,
+  statusText:
+    document.querySelector(".result-strip__scenario strong")?.textContent ??
+    document.querySelector(".scenario-simulator__pill")?.textContent,
 }));
 
+await page.getByRole("tab", { name: /Detalhes/i }).click();
+await page.waitForSelector(".weather-panel", { timeout: 10000 });
+const weatherOk = await page.evaluate(() => Boolean(document.querySelector(".weather-panel")));
+afterFloodDemo.weather = weatherOk;
+
+await page.getByRole("tab", { name: /Simular/i }).click();
 await page.evaluate(() => {
   const btn = [...document.querySelectorAll(".scenario-simulator__btn")].find((b) =>
-    b.textContent?.trim().startsWith("Chuva forte"),
+    b.textContent?.includes("Chuva forte"),
   );
   btn?.click();
 });
 await page.waitForFunction(
-  () => document.querySelector(".scenario-status strong")?.textContent?.includes("Chuva") ?? false,
+  () =>
+    document.body.textContent?.includes("Chuva") &&
+    (document.querySelector(".result-strip__scenario strong")?.textContent?.includes("Chuva") ??
+      document.querySelector(".scenario-simulator__pill")?.textContent?.includes("Chuva") ??
+      false),
   { timeout: 60000 },
 );
 
 const afterRain = await page.evaluate(() => ({
-  statusText: document.querySelector(".scenario-status strong")?.textContent,
+  statusText:
+    document.querySelector(".result-strip__scenario strong")?.textContent ??
+    document.querySelector(".scenario-simulator__pill")?.textContent,
 }));
 
-await page.getByRole("button", { name: "Relatório" }).click();
+await page.getByLabel("Resultado da rota").getByRole("button", { name: "Relatório" }).click();
 await page.waitForTimeout(400);
 
 const modal = await page.evaluate(() => ({
@@ -74,7 +88,7 @@ const modal = await page.evaluate(() => ({
 
 await page.getByLabel("Fechar relatório").click();
 
-await page.getByRole("tab", { name: "Modo Gestor" }).click();
+await page.getByRole("tab", { name: "Gestor" }).click();
 await page.waitForTimeout(300);
 
 const manager = await page.evaluate(() => ({
@@ -92,11 +106,14 @@ const result = { url, initial, afterFloodDemo, afterRain, modal, manager, consol
 const checks = [
   initial.title === "OrbitTwin",
   initial.heroTitle === "Para onde você vai?",
-  initial.homeSteps === 3,
+  (initial.stepHint?.includes("Passo") ?? false),
   (afterFloodDemo.summary?.length ?? 0) > 20,
   afterFloodDemo.hasMap,
   afterFloodDemo.weather,
-  (afterFloodDemo.statusText?.includes("Enchente") || afterFloodDemo.statusText?.includes("alagamento")) ?? false,
+  (afterFloodDemo.summary?.includes("Marginal") ||
+    afterFloodDemo.summary?.includes("contorna") ||
+    afterFloodDemo.summary?.includes("crítica")) ??
+    false,
   (afterRain.statusText?.includes("Chuva") ?? false),
   modal.open && modal.title === "Relatório da simulação" && modal.hasScenario,
   manager.decisionDashboard,

@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import L from "leaflet";
 import { FACILITY_POIS, SENSOR_POIS } from "../data";
 import { RISK_ZONES, RISK_ZONE_COLORS } from "../data/riskZones";
+import { GS_SHOWCASE_ZONE_ID } from "../data/gsDetourDemo";
 import type { EnvironmentalContext, MapLayerVisibility, RegionKey, RouteData } from "../types";
 
 type RouteMapProps = {
@@ -13,6 +14,8 @@ type RouteMapProps = {
   compact?: boolean;
   showAllRiskZones?: boolean;
   hideLayerUI?: boolean;
+  /** Destaca zona crítica da demo GS (ex.: Marginal Tietê) */
+  highlightZoneId?: string;
 };
 
 export function RouteMap({
@@ -24,6 +27,7 @@ export function RouteMap({
   compact = false,
   showAllRiskZones = false,
   hideLayerUI = false,
+  highlightZoneId,
 }: RouteMapProps) {
   const mapNodeRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -69,16 +73,22 @@ export function RouteMap({
         RISK_ZONES.forEach((zone) => {
           const colors = RISK_ZONE_COLORS[zone.riskLevel];
           const isSimulated = simulatedIds.has(zone.id);
+          const isShowcase = highlightZoneId && zone.id === highlightZoneId;
           nextLayers.push(
             L.polygon(zone.polygon, {
-              className: isSimulated ? "risk-zone--simulated" : undefined,
-              color: colors.stroke,
-              fillColor: colors.fill,
-              fillOpacity: zone.riskLevel === "low" ? 0.12 : zone.riskLevel === "medium" ? 0.2 : 0.38,
-              opacity: isSimulated ? 1 : 0.85,
-              weight: zone.riskLevel === "critical" || isSimulated ? 3 : 2,
+              className: [
+                isSimulated ? "risk-zone--simulated" : "",
+                isShowcase ? "risk-zone--showcase" : "",
+              ]
+                .filter(Boolean)
+                .join(" ") || undefined,
+              color: isShowcase ? "#5ee9ff" : colors.stroke,
+              fillColor: isShowcase ? "#ef4444" : colors.fill,
+              fillOpacity: isShowcase ? 0.48 : zone.riskLevel === "low" ? 0.12 : zone.riskLevel === "medium" ? 0.2 : 0.38,
+              opacity: isShowcase ? 1 : isSimulated ? 1 : 0.85,
+              weight: isShowcase ? 4 : zone.riskLevel === "critical" || isSimulated ? 3 : 2,
             }).bindPopup(
-              `<strong>${zone.name}</strong><br/>${zone.description}${isSimulated ? "<br/><em>Evento simulado</em>" : ""}`,
+              `<strong>${zone.name}</strong>${isShowcase ? "<br/><em>Zona crítica — demo GS</em>" : ""}<br/>${zone.description}${isSimulated ? "<br/><em>Evento simulado</em>" : ""}`,
             ),
           );
         });

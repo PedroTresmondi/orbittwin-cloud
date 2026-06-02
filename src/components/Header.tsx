@@ -4,12 +4,18 @@ import { ViewModeToggle } from "./ViewModeToggle";
 type HeaderProps = {
   mode: AppMode;
   onModeChange: (mode: AppMode) => void;
+  onMenuOpen: () => void;
 };
 
-export function Header({ mode, onModeChange }: HeaderProps) {
+export function Header({ mode, onModeChange, onMenuOpen }: HeaderProps) {
   return (
-    <header className="header header--compact">
+    <header className="header header--glass">
       <div className="header__inner">
+        <button type="button" className="header__menu" aria-label="Abrir menu" onClick={onMenuOpen}>
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+        </button>
         <div className="header__brand">
           <div className="header__logo" aria-hidden="true">
             <span className="logo-orbit" />

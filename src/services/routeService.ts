@@ -14,7 +14,9 @@ import type {
 } from "../types";
 import { findCrossedZones } from "../utils/riskGeometry";
 import { buildCitizenRouteMessage, buildRecommendedActions } from "../utils/routeMessages";
-import { getMidpoint, getSafeRoute, buildBlocksFromZones } from "./routeEngine";
+import { getMidpoint, getGsDetourRoutes, getSafeRoute, buildBlocksFromZones } from "./routeEngine";
+import { GS_SHOWCASE_ZONE_ID, GS_SHOWCASE_ZONE_NAME } from "../data/gsDetourDemo";
+import { applyGsDetourRiskAdjustment } from "./gsDetourRisk";
 import { buildDataSources, buildRouteSimulationHistory } from "./historyMapper";
 import { buildDataSourceStatuses } from "./dataSourceService";
 import { compareRouteRisks, buildRecommendationConfidence } from "./riskService";
@@ -34,6 +36,8 @@ import { getWeatherForRoute } from "./weatherService";
 
 export type PlanSafeRouteOptions = {
   scenario?: ScenarioKind;
+  /** Demonstração GS: convencional pela zona crítica, segura com desvio */
+  gsDetourDemo?: boolean;
 };
 
 export async function planSafeRoute(
@@ -49,10 +53,14 @@ export async function planSafeRoute(
 
   const activeZones = applyScenarioToZones(RISK_ZONES, scenario);
 
+  const gsDetourDemo = options?.gsDetourDemo === true;
+
   const [baseWeather, environmental, routes] = await Promise.all([
     getWeatherForRoute([origin.lat, origin.lng], [destination.lat, destination.lng]),
     fetchEnvironmentalContext([origin.lat, origin.lng], [destination.lat, destination.lng]),
-    getSafeRoute(origin, destination, activeZones, profile),
+    gsDetourDemo
+      ? getGsDetourRoutes(origin, destination, activeZones)
+      : getSafeRoute(origin, destination, activeZones, profile),
   ]);
 
   const weather = applyScenarioToWeather(baseWeather, scenario);
@@ -65,6 +73,9 @@ export async function planSafeRoute(
   }
   if (isScenarioActive(scenario)) {
     warnings.push(`Cenário simulado ativo: ${SCENARIO_LABELS[scenario]}.`);
+  }
+  if (gsDetourDemo) {
+    warnings.push(`Demonstração GS: rota convencional passa por ${GS_SHOWCASE_ZONE_NAME}; rota OrbitTwin contorna a área crítica.`);
   }
 
   const zoneBlocks = buildBlocksFromZones(activeZones);
@@ -106,8 +117,32 @@ export async function planSafeRoute(
     };
   }
 
+  if (gsDetourDemo) {
+    risk = applyGsDetourRiskAdjustment(risk, routes.conventional.path, routes.safe.path, activeZones);
+    const extraMin = Math.max(safeTime - conventionalTime, 0);
+    const zoneLabel = GS_SHOWCASE_ZONE_NAME;
+    risk = {
+      ...risk,
+      recommendation: buildGsDetourRecommendation(risk, zoneLabel, extraMin),
+      explanation: [
+        `A rota convencional atravessa ${zoneLabel} (nível crítico de alagamento).`,
+        "A rota OrbitTwin recalcula o trajeto com waypoints de desvio (OSRM) para contornar a zona.",
+        (risk.avoidedZoneNames?.length ?? 0) > 0
+          ? `Zonas evitadas pela rota segura: ${risk.avoidedZoneNames!.join(", ")}.`
+          : "Desvio calculado para reduzir exposição à zona crítica.",
+        ...risk.explanation.slice(0, 1),
+      ],
+    };
+  }
+
   const crossed = findCrossedZones(routes.conventional.path, activeZones);
-  const primaryRiskZone = crossed[0] ?? RISK_ZONES.find((z) => z.regionKey === regionKey) ?? RISK_ZONES[0];
+  const showcaseZone = activeZones.find((z) => z.id === GS_SHOWCASE_ZONE_ID);
+  const primaryRiskZone =
+    (gsDetourDemo && showcaseZone) ||
+    crossed.find((z) => z.id === GS_SHOWCASE_ZONE_ID) ||
+    crossed[0] ||
+    RISK_ZONES.find((z) => z.regionKey === regionKey) ||
+    RISK_ZONES[0];
   const criticalSegments = crossed.map((z) => `${z.name} — ${z.description}`);
   const avoided = crossed
     .filter((z) => !findCrossedZones(routes.safe.path, [z]).length)
@@ -190,6 +225,7 @@ export async function planSafeRoute(
     dataSources,
     dataHub,
     environmental,
+    gsDetourDemo: gsDetourDemo || undefined,
   };
 }
 
@@ -211,6 +247,15 @@ function applyScenarioRiskBoost(risk: PlannedRouteResult["risk"], scenario: Scen
     exposureReductionPercent,
     confidence: Math.min(96, risk.confidence + 8),
   };
+}
+
+function buildGsDetourRecommendation(
+  risk: PlannedRouteResult["risk"],
+  zoneName: string,
+  extraMin: number,
+): string {
+  const timeLabel = extraMin <= 1 ? "1 minuto" : `${extraMin} minutos`;
+  return `A rota convencional passa por ${zoneName} (risco ${risk.conventionalRiskLabel.toLowerCase()}). Use a rota OrbitTwin: ela contorna a área crítica em cerca de ${timeLabel} a mais e reduz a exposição em ${risk.exposureReductionPercent}%.`;
 }
 
 function buildScenarioRecommendation(

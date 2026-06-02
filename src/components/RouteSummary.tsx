@@ -3,6 +3,8 @@ import type { PlannedRouteResult } from "../types";
 type RouteSummaryProps = {
   planned: PlannedRouteResult;
   compact?: boolean;
+  /** Exibe cards comparativos convencional vs segura (aba Detalhes) */
+  showComparison?: boolean;
 };
 
 const DATA_MODE_LABELS = {
@@ -11,46 +13,60 @@ const DATA_MODE_LABELS = {
   hybrid: "Híbrido",
 } as const;
 
-export function RouteSummary({ planned, compact = false }: RouteSummaryProps) {
+export function RouteSummary({ planned, compact = false, showComparison = true }: RouteSummaryProps) {
   const { route, risk } = planned;
   const extraMin = Math.max(route.safeTime - route.conventionalTime, 0);
 
   return (
     <section className="route-summary">
-      <div className="route-summary__hero card">
-        <div className="route-summary__meta-row">
-          <span className="route-summary__label">Resumo da recomendação</span>
-          <span className={`route-summary__mode route-summary__mode--${planned.dataMode}`}>
-            Fonte: {DATA_MODE_LABELS[planned.dataMode]}
-          </span>
+      {!showComparison && (
+        <div className="route-summary__hero card">
+          <div className="route-summary__meta-row">
+            <span className="route-summary__label">Recomendação</span>
+            <span className={`route-summary__mode route-summary__mode--${planned.dataMode}`}>
+              {DATA_MODE_LABELS[planned.dataMode]}
+            </span>
+          </div>
+          <p className="route-summary__message">{risk.recommendation}</p>
         </div>
-        <p className="route-summary__message">{risk.recommendation}</p>
-        {!compact && route.conventionalRisk >= 60 && (
-          <p className="route-summary__citizen-tip">
-            Evite a rota convencional. Há risco {risk.conventionalRiskLabel.toLowerCase()} no trajeto.
-          </p>
-        )}
-        <dl className="route-summary__stats">
-          <div>
-            <dt>Rota recomendada</dt>
-            <dd>OrbitTwin segura</dd>
-          </div>
-          <div>
-            <dt>Tempo adicional</dt>
-            <dd>+{extraMin} min</dd>
-          </div>
-          <div>
-            <dt>Redução de exposição</dt>
-            <dd>-{risk.exposureReductionPercent}%</dd>
-          </div>
-          <div>
-            <dt>Confiança</dt>
-            <dd>{risk.confidence}%</dd>
-          </div>
-        </dl>
-      </div>
+      )}
 
-      <div className="route-summary__cards">
+      {showComparison && (
+        <>
+          <div className="route-summary__hero card">
+            <div className="route-summary__meta-row">
+              <span className="route-summary__label">Comparativo de rotas</span>
+              <span className={`route-summary__mode route-summary__mode--${planned.dataMode}`}>
+                {DATA_MODE_LABELS[planned.dataMode]}
+              </span>
+            </div>
+            <p className="route-summary__message">{risk.recommendation}</p>
+            {!compact && route.conventionalRisk >= 60 && (
+              <p className="route-summary__citizen-tip">
+                Evite a rota convencional. Há risco {risk.conventionalRiskLabel.toLowerCase()} no trajeto.
+              </p>
+            )}
+            <dl className="route-summary__stats">
+              <div>
+                <dt>Recomendada</dt>
+                <dd>OrbitTwin segura</dd>
+              </div>
+              <div>
+                <dt>Tempo extra</dt>
+                <dd>+{extraMin} min</dd>
+              </div>
+              <div>
+                <dt>Exposição</dt>
+                <dd>−{risk.exposureReductionPercent}%</dd>
+              </div>
+              <div>
+                <dt>Confiança</dt>
+                <dd>{risk.confidence}%</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div className="route-summary__cards">
         <article className="route-card route-card--danger">
           <div className="route-card__head">
             <span>Rota convencional</span>
@@ -92,7 +108,9 @@ export function RouteSummary({ planned, compact = false }: RouteSummaryProps) {
             </div>
           </dl>
         </article>
-      </div>
+          </div>
+        </>
+      )}
     </section>
   );
 }

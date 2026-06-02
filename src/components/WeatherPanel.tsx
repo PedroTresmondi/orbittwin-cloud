@@ -16,7 +16,7 @@ function formatFetchedAt(iso: string): string {
 export function WeatherPanel({ weather, scenarioActive = false }: WeatherPanelProps) {
   if (!weather) {
     return (
-      <section className="weather-panel card">
+      <section className="weather-panel glass-surface">
         <h3>Condições reais do tempo</h3>
         <p className="weather-panel__empty">Calcule uma rota para carregar previsão do Open-Meteo.</p>
       </section>
@@ -26,7 +26,7 @@ export function WeatherPanel({ weather, scenarioActive = false }: WeatherPanelPr
   const simulated = weather.isSimulated || scenarioActive;
 
   return (
-    <section className="weather-panel card">
+    <section className="weather-panel glass-surface">
       <header className="weather-panel__head">
         <h3>Condições reais do tempo</h3>
         <span className={`weather-panel__source${simulated ? " weather-panel__source--mock" : ""}`}>
