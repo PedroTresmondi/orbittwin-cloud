@@ -25,6 +25,7 @@ type RouteMapProps = {
   compact?: boolean;
   showAllRiskZones?: boolean;
   hideLayerUI?: boolean;
+  /** Destaca zona crítica da demo GS (ex.: Marginal Tietê) */
   highlightZoneId?: string;
 };
 
@@ -35,6 +36,7 @@ export function RouteMap({
   environmental,
   compact = false,
   showAllRiskZones = false,
+  hideLayerUI: _hideLayerUI = false,
   highlightZoneId,
 }: RouteMapProps) {
   const mapNodeRef = useRef<HTMLDivElement | null>(null);
