@@ -2,17 +2,21 @@ import { RISK_SCORE } from "../data";
 import type { GeoPoint, Region, RouteData, RouteExposure, TravelProfile } from "../types";
 
 const PROFILE_RISK_MULTIPLIER: Record<TravelProfile, number> = {
+  citizen: 1.2,
+  pedestrian: 1.24,
+  driver: 1.05,
   emergency: 1.16,
   public_transport: 1.08,
   utility: 1,
-  pedestrian: 1.24,
 };
 
 const PROFILE_TIME_MULTIPLIER: Record<TravelProfile, number> = {
+  citizen: 2.6,
+  pedestrian: 2.8,
+  driver: 1.05,
   emergency: 0.82,
   public_transport: 1.18,
   utility: 1,
-  pedestrian: 2.8,
 };
 
 export function calculateDistanceKm(path: GeoPoint[]): number {
@@ -41,9 +45,10 @@ export function calculateRouteExposure(
   profile: TravelProfile,
 ): RouteExposure {
   const pointsInsideRiskArea = path.filter((point) => isPointInPolygon(point, riskArea)).length;
+  const distanceInsideRiskKm = calculateDistanceInsideRiskKm(path, riskArea);
   const minBlockDistanceMeters = getMinBlockDistance(path, blocks);
   const nearBlocks = blocks.filter((block) => getMinDistanceToPath(block, path) <= 180).length;
-  const areaExposure = path.length > 0 ? (pointsInsideRiskArea / path.length) * 42 : 0;
+  const areaExposure = path.length > 0 ? (pointsInsideRiskArea / path.length) * 42 + distanceInsideRiskKm * 8 : 0;
   const blockExposure = nearBlocks * 12;
   const proximityExposure =
     minBlockDistanceMeters === null ? 0 : minBlockDistanceMeters < 90 ? 18 : minBlockDistanceMeters < 180 ? 10 : 4;
@@ -55,7 +60,31 @@ export function calculateRouteExposure(
     pointsInsideRiskArea,
     nearBlocks,
     minBlockDistanceMeters: minBlockDistanceMeters === null ? null : Math.round(minBlockDistanceMeters),
+    distanceInsideRiskKm: round(distanceInsideRiskKm, 2),
   };
+}
+
+export function calculateDistanceInsideRiskKm(path: GeoPoint[], riskArea: GeoPoint[]): number {
+  if (path.length < 2 || riskArea.length < 3) return 0;
+
+  let meters = 0;
+  for (let index = 1; index < path.length; index += 1) {
+    const start = path[index - 1];
+    const end = path[index];
+    const startInside = isPointInPolygon(start, riskArea);
+    const endInside = isPointInPolygon(end, riskArea);
+
+    if (startInside && endInside) {
+      meters += haversineMeters(start, end);
+      continue;
+    }
+
+    if (startInside || endInside) {
+      meters += haversineMeters(start, end) * 0.55;
+    }
+  }
+
+  return meters / 1000;
 }
 
 export function buildRecommendationConfidence(route: RouteData): number {

@@ -6,13 +6,88 @@ export type AlertType = "critical" | "warning" | "info";
 
 export type SpatialKey = "ndwi" | "precipitation" | "surfaceTemp" | "humidity" | "cloudCover";
 
-export type TravelProfile = "emergency" | "public_transport" | "utility" | "pedestrian";
+export type TravelProfile = "emergency" | "public_transport" | "utility" | "pedestrian" | "citizen" | "driver";
+
+export type PlannerProfile = TravelProfile;
+
+export type GeocodeSource = "nominatim" | "fallback";
+
+export type GeocodeResult = {
+  label: string;
+  lat: number;
+  lng: number;
+  type: string;
+  importance: number;
+  source: GeocodeSource;
+};
+
+export type RouteResult = {
+  path: GeoPoint[];
+  distanceKm: number;
+  durationMinutes: number;
+  source: RouteSource;
+};
+
+export type RiskLabel = "Baixo" | "Médio" | "Alto" | "Crítico";
+
+export type RouteRiskResult = {
+  conventionalRiskScore: number;
+  safeRiskScore: number;
+  conventionalRiskLabel: RiskLabel;
+  safeRiskLabel: RiskLabel;
+  exposureReduction: number;
+  exposureReductionPercent: number;
+  confidence: number;
+  recommendation: string;
+  explanation: string[];
+  crossedZones: string[];
+};
+
+export type WeatherForecast = {
+  precipitationNextHour: number;
+  precipitationNext2Hours: number;
+  precipitationProbability: number;
+  temperature: number;
+  humidity: number;
+  source: string;
+  fetchedAt: string;
+  isSimulated: boolean;
+};
+
+export type PlannedRouteResult = {
+  route: RouteData;
+  weather: WeatherForecast;
+  risk: RouteRiskResult;
+  usedFallback: boolean;
+  warnings: string[];
+};
 
 export type RouteSource = "osrm" | "fallback";
+
+export type AppMode = "citizen" | "manager";
+
+export type MapLayerId =
+  | "conventional"
+  | "safe"
+  | "riskAreas"
+  | "blocks"
+  | "sensors"
+  | "facilities"
+  | "weather";
+
+export type MapLayerVisibility = Record<MapLayerId, boolean>;
 
 export type RiskSummary = {
   label: string;
   score: number;
+};
+
+export type RouteRiskAssessment = {
+  riskScore: number;
+  riskLabel: string;
+  confidence: number;
+  exposureReduction: number;
+  explanation: string[];
 };
 
 export type Kpis = {
@@ -56,6 +131,13 @@ export type Alert = {
 
 export type GeoPoint = [number, number];
 
+export type MapPoi = {
+  id: string;
+  name: string;
+  coords: GeoPoint;
+  region: RegionKey;
+};
+
 export type RouteMapModel = {
   center: GeoPoint;
   originCoords: GeoPoint;
@@ -83,6 +165,8 @@ export type RouteData = {
   avoidedBlocks: string[];
   recommendation: string;
   map: RouteMapModel;
+  conventionalAssessment?: RouteRiskAssessment;
+  safeAssessment?: RouteRiskAssessment;
 };
 
 export type OperationalPlace = {
@@ -103,6 +187,7 @@ export type RouteExposure = {
   pointsInsideRiskArea: number;
   nearBlocks: number;
   minBlockDistanceMeters: number | null;
+  distanceInsideRiskKm: number;
 };
 
 export type RouteEngineResult = {
@@ -119,9 +204,42 @@ export type OperationalEvent = {
   destination: string;
   profile: TravelProfile;
   source: RouteSource;
-  decision: string;
+  conventionalRisk: number;
+  safeRisk: number;
+  conventionalTime: number;
+  safeTime: number;
+  conventionalDistanceKm: number;
+  safeDistanceKm: number;
+  exposureReduction: number;
+  finalRecommendation: string;
   riskReduction: number;
   confidence: number;
+  weatherSource: string;
+  geocodeSource: string;
+  plannerSnapshot?: PlannedRouteResult;
+};
+
+export type SimulationReport = {
+  generatedAt: string;
+  origin: string;
+  destination: string;
+  profile: TravelProfile;
+  region: string;
+  recommendedRoute: string;
+  conventionalRisk: number;
+  safeRisk: number;
+  conventionalTime: number;
+  safeTime: number;
+  timeDifferenceMinutes: number;
+  riskReduction: number;
+  exposureReductionPercent: number;
+  confidence: number;
+  source: RouteSource;
+  citizenMessage: string;
+  justifications: string[];
+  recommendedActions: string[];
+  weather: WeatherForecast;
+  crossedZones: string[];
 };
 
 export type OrbitTwinState = {
@@ -132,4 +250,23 @@ export type OrbitTwinState = {
   routes: Record<RegionKey, RouteData>;
   spatial: Record<SpatialKey, SpatialMetric>;
   alerts: Alert[];
+};
+
+export const DEFAULT_MAP_LAYERS: MapLayerVisibility = {
+  conventional: true,
+  safe: true,
+  riskAreas: true,
+  blocks: true,
+  sensors: true,
+  facilities: true,
+  weather: true,
+};
+
+export const PLANNER_PROFILE_LABELS: Record<PlannerProfile, string> = {
+  citizen: "Cidadão",
+  pedestrian: "Pedestre",
+  driver: "Motorista",
+  public_transport: "Transporte público",
+  utility: "Defesa Civil",
+  emergency: "Ambulância / Emergência",
 };

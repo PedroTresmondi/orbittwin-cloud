@@ -1,4 +1,13 @@
-import type { AlertType, OperationalPlace, OrbitTwinState, RegionKey, RiskLevel, SpatialKey, TravelProfile } from "./types";
+import type {
+  AlertType,
+  MapPoi,
+  OperationalPlace,
+  OrbitTwinState,
+  RegionKey,
+  RiskLevel,
+  SpatialKey,
+  TravelProfile,
+} from "./types";
 
 export const REGION_KEYS: RegionKey[] = ["centro", "oeste", "leste", "tiete", "encosta", "sul"];
 
@@ -35,11 +44,35 @@ export const SPATIAL_LABELS: Record<SpatialKey, string> = {
 export const SATELLITES = ["GOES-16", "Sentinel-2", "Landsat-9", "COSMO-SkyMed", "SAOCOM-1A"] as const;
 
 export const TRAVEL_PROFILE_LABELS: Record<TravelProfile, string> = {
-  emergency: "Viatura emergencial",
-  public_transport: "Transporte público",
-  utility: "Equipe técnica",
+  citizen: "Cidadão",
   pedestrian: "Pedestre",
+  driver: "Motorista",
+  public_transport: "Transporte público",
+  utility: "Defesa Civil",
+  emergency: "Ambulância / Emergência",
 };
+
+/** Sensores IoT simulados para camada do mapa */
+export const SENSOR_POIS: MapPoi[] = [
+  { id: "sensor-centro-1", name: "Sensor pluviométrico #012", region: "centro", coords: [-23.5482, -46.6481] },
+  { id: "sensor-centro-2", name: "Sensor de nível #019", region: "centro", coords: [-23.5528, -46.6507] },
+  { id: "sensor-leste-1", name: "Sensor ribeirinho #031", region: "leste", coords: [-23.5396, -46.5204] },
+  { id: "sensor-leste-2", name: "Sensor pluviométrico #034", region: "leste", coords: [-23.5413, -46.5481] },
+  { id: "sensor-tiete-1", name: "Sensor hídrico marginal #041", region: "tiete", coords: [-23.5238, -46.68] },
+  { id: "sensor-tiete-2", name: "Sensor bomba recalque #044", region: "tiete", coords: [-23.5298, -46.7078] },
+  { id: "sensor-encosta-1", name: "Inclinômetro #052", region: "encosta", coords: [-23.4446, -46.626] },
+  { id: "sensor-sul-1", name: "Sensor córrego #061", region: "sul", coords: [-23.72, -46.6968] },
+];
+
+/** Hospitais e escolas simulados para camada do mapa */
+export const FACILITY_POIS: MapPoi[] = [
+  { id: "hospital-tatuape", name: "Hospital Municipal Tatuapé", region: "leste", coords: [-23.5358, -46.5744] },
+  { id: "upa-centro", name: "UPA Centro", region: "centro", coords: [-23.5505, -46.642] },
+  { id: "escola-leste", name: "Escola Estadual Zona Leste", region: "leste", coords: [-23.5384, -46.4946] },
+  { id: "escola-sul", name: "Escola Municipal Grajaú", region: "sul", coords: [-23.728, -46.6932] },
+  { id: "defesa-civil-central", name: "Defesa Civil Central", region: "centro", coords: [-23.5489, -46.6388] },
+  { id: "base-defesa-civil", name: "Base Defesa Civil Encosta", region: "encosta", coords: [-23.459, -46.633] },
+];
 
 export const OPERATIONAL_PLACES: OperationalPlace[] = [
   { id: "praca-roosevelt", name: "Praça Roosevelt", region: "centro", coords: [-23.5444, -46.6466] },
