@@ -10,9 +10,19 @@ Projeto acadêmico · **Global Solution 2026** (FIAP) · Cloud Solutions & Scala
 
 | Ambiente | URL |
 |----------|-----|
-| GitHub Pages | `https://SEU_USUARIO.github.io/orbittwin-cloud/` |
-| Docker local | `http://localhost:8080` |
-| Desenvolvimento | `http://127.0.0.1:5173` |
+| **GitHub Pages** | https://pedrotresmondi.github.io/orbittwin-cloud/ |
+| Docker local | http://localhost:8080 |
+| Desenvolvimento | http://127.0.0.1:5173 |
+
+### Roteiro de apresentação (~60s)
+
+1. Abra o site → clique em **Aleatório e calcular** (origem/destino + rota em um passo).
+2. Leia o **resumo da rota segura** (risco convencional vs segura, minutos a mais).
+3. Abra **Simular risco na rota** → **Enchente** e mostre o mapa mudando.
+4. Expanda **Fontes de dados** → destaque Real (OSRM, Open-Meteo, NASA FIRMS).
+5. **Modo Gestor** → painel **Indicadores para tomada de decisão** (KPIs, mapa, alertas, recomendação IA).
+
+Atalho alternativo: **Exemplo com enchente** (Paulista → Santo Amaro pré-configurado).
 
 ---
 
@@ -38,9 +48,25 @@ Digite origem e destino como em um app de mapas (ex.: **Avenida Paulista** → *
 - Histórico em cards
 - Relatório da simulação disponível
 
+## Dashboard de tomada de decisão
+
+Seção **Indicadores para tomada de decisão** (Modo Gestor), pensada para a apresentação GS:
+
+| Bloco | Conteúdo |
+|-------|----------|
+| **KPIs** | Regiões em risco, probabilidade de alagamento, sensores IoT, população impactada, tempo de resposta |
+| **Mapa de risco urbano** | Visão sintética de zonas SP + marcadores (sensores, estações, focos) |
+| **Regiões críticas** | Ranking em barras horizontais com selo Real/Simulado/Híbrido |
+| **Alertas recentes** | Lista contextual (enchente, bloqueio, chuva, rota em risco) |
+| **Recomendação OrbitTwin** | Cenário, análise, ação, confiança e fontes |
+
+O painel reage automaticamente às simulações (chuva, enchente, bloqueio, deslizamento, múltiplos) e aos dados reais quando uma rota foi calculada (Open-Meteo, OSRM, NASA FIRMS).
+
+Componentes: `DecisionDashboard`, `KpiCards`, `CriticalRegionsChart`, `UrbanRiskMiniMap`, `RecentAlerts`, `DecisionRecommendation`, `decisionDashboardService.ts`.
+
 ## Modo Gestor
 
-- Dashboard com KPIs, alertas e mapa regional
+- Dashboard de tomada de decisão + KPIs, alertas e mapa regional (legado recolhível)
 - Simulação de leitura orbital
 - Controles de camadas do mapa (sensores, bloqueios, hospitais/escolas)
 - Histórico em tabela com fontes de dados (OSRM, Nominatim, Open-Meteo)
@@ -68,9 +94,10 @@ Toggle global no topo: **Modo Cidadão | Modo Gestor**
 ## Início rápido
 
 ```bash
-git clone https://github.com/SEU_USUARIO/orbittwin-cloud.git
+git clone https://github.com/PedroTresmondi/orbittwin-cloud.git
 cd orbittwin-cloud
 npm install
+cp .env.example .env.local   # opcional: NASA FIRMS
 npm run dev
 ```
 
@@ -104,15 +131,12 @@ docker run -d -p 8080:80 --name orbittwin-cloud orbittwin-cloud
 
 1. Push na branch `main`
 2. **Settings → Pages → Source:** **GitHub Actions**
-3. Workflow `.github/workflows/deploy.yml`: `npm ci` → smoke → build → deploy
+3. (Opcional) **Settings → Secrets and variables → Actions** → crie `VITE_NASA_FIRMS_MAP_KEY` com a chave NASA FIRMS — o build do CI injeta no bundle para produção.
+4. Workflow `.github/workflows/deploy.yml`: `npm ci` → smoke → build → deploy
 
-`vite.config.ts`:
+`vite.config.ts` usa `base: "/orbittwin-cloud/"` em produção.
 
-```ts
-const GITHUB_PAGES_BASE = "/orbittwin-cloud/";
-```
-
-URL: `https://pedrotresmondi.github.io/orbittwin-cloud/`
+URL publicada: https://pedrotresmondi.github.io/orbittwin-cloud/
 
 ---
 

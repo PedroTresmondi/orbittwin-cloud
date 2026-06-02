@@ -7,21 +7,14 @@ type ScenarioStatusBadgeProps = {
 };
 
 export function ScenarioStatusBadge({ scenario, planned }: ScenarioStatusBadgeProps) {
+  if (!planned) return null;
+
   const active = isScenarioActive(scenario);
-  const label = active ? SCENARIO_LABELS[scenario] : "Dados reais ativos";
-  const dataMode = planned?.dataMode ?? (active ? "simulated" : "real");
+  if (!active) return null;
 
   return (
-    <div
-      className={`scenario-status${active ? " scenario-status--simulated" : " scenario-status--real"}`}
-      role="status"
-      aria-live="polite"
-    >
-      <span className="scenario-status__label">Status do cenário</span>
-      <strong>{label}</strong>
-      <span className="scenario-status__mode">
-        Fonte: {dataMode === "real" ? "Real" : dataMode === "hybrid" ? "Híbrido" : "Simulado"}
-      </span>
+    <div className="scenario-status scenario-status--simulated scenario-status--compact" role="status">
+      <strong>{SCENARIO_LABELS[scenario]}</strong>
     </div>
   );
 }

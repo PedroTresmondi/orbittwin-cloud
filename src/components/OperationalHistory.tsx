@@ -20,7 +20,10 @@ export function OperationalHistory({ history, onSelect, onClear, variant = "card
     return (
       <section className="history-panel card">
         <h3>Histórico operacional</h3>
-        <p className="route-history__empty">Nenhuma simulação salva neste dispositivo.</p>
+        <p className="route-history__empty">
+          Nenhuma rota calculada ainda. Use <strong>Calcular rota segura</strong> ou{" "}
+          <strong>Aleatório e calcular</strong> para gerar o primeiro registro.
+        </p>
       </section>
     );
   }

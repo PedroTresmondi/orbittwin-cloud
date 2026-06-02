@@ -7,6 +7,7 @@ import { isScenarioActive } from "../services/scenarioService";
 import { buildCitizenRouteMessage } from "../utils/routeMessages";
 import { AddressSearch } from "./AddressSearch";
 import { DataHubPanel } from "./DataHubPanel";
+import { HomeStart } from "./HomeStart";
 import { LayerControls } from "./LayerControls";
 import { OperationalHistory } from "./OperationalHistory";
 import { RouteExplanation } from "./RouteExplanation";
@@ -15,6 +16,8 @@ import { RouteSummary } from "./RouteSummary";
 import { SatelliteLayersPanel } from "./SatelliteLayersPanel";
 import { ScenarioSimulator } from "./ScenarioSimulator";
 import { WeatherPanel } from "./WeatherPanel";
+import { MapFeedNotice } from "./MapFeedNotice";
+import { RouteOperationalBridge } from "./RouteOperationalBridge";
 
 type PlannerState = ReturnType<typeof useSafeRoutePlanner>;
 
@@ -24,9 +27,19 @@ type SafeRoutePlannerProps = {
   mapLayers: MapLayerVisibility;
   onLayersChange: (layers: MapLayerVisibility) => void;
   onOpenReport: () => void;
+  onDemoFlood: () => void;
+  onOpenManager: () => void;
 };
 
-export function SafeRoutePlanner({ mode, planner, mapLayers, onLayersChange, onOpenReport }: SafeRoutePlannerProps) {
+export function SafeRoutePlanner({
+  mode,
+  planner,
+  mapLayers,
+  onLayersChange,
+  onOpenReport,
+  onDemoFlood,
+  onOpenManager,
+}: SafeRoutePlannerProps) {
   const {
     form,
     setForm,
@@ -37,6 +50,8 @@ export function SafeRoutePlanner({ mode, planner, mapLayers, onLayersChange, onO
     loadingLabel,
     error,
     applyExample,
+    applyRandomRoute,
+    applyRandomAndCalculate,
     calculate,
     applyScenario,
     loadFromHistory,
@@ -52,79 +67,102 @@ export function SafeRoutePlanner({ mode, planner, mapLayers, onLayersChange, onO
     weather: dataHub.find((e) => e.id === "open-meteo")?.badge ?? "Real",
   };
 
+  const canCalculate = Boolean(form.origin && form.destination);
+
+  const firmsEmptyNotice =
+    planned?.environmental?.firesFeed?.status === "real" &&
+    planned.environmental.firesFeed.apiOnline &&
+    planned.environmental.fireHotspots.length === 0;
+
   return (
-    <section id="planner-section" className="planner card">
-      <header className="section-head">
-        <div>
-          <h2>Planejar rota segura</h2>
-          <p>
-            Digite origem e destino como em um app de mapas. O OrbitTwin usa dados reais quando possível e permite
-            simular enchentes e bloqueios para a apresentação.
-          </p>
+    <section id="planner-section" className="planner card home-planner">
+      <HomeStart
+        hasOrigin={Boolean(form.origin)}
+        hasDestination={Boolean(form.destination)}
+        hasRoute={Boolean(planned)}
+      />
+
+      <div className="planner__form home-form">
+        <div className="home-form__fields">
+          <AddressSearch
+            id="origin"
+            label="Origem"
+            placeholder="Avenida Paulista"
+            value={form.originQuery}
+            selected={form.origin}
+            onQueryChange={(originQuery) => setForm((f) => ({ ...f, originQuery }))}
+            onSelect={(origin) => setForm((f) => ({ ...f, origin }))}
+          />
+          <AddressSearch
+            id="destination"
+            label="Destino"
+            placeholder="Estação Santo Amaro"
+            value={form.destinationQuery}
+            selected={form.destination}
+            onQueryChange={(destinationQuery) => setForm((f) => ({ ...f, destinationQuery }))}
+            onSelect={(destination) => setForm((f) => ({ ...f, destination }))}
+          />
         </div>
-      </header>
 
-      <DataHubPanel entries={dataHub} mode={mode} />
+        <button
+          type="button"
+          className={`btn-orbit btn-orbit--large btn-orbit--block${isLoading ? " is-loading" : ""}`}
+          disabled={isLoading || !canCalculate}
+          onClick={() => void calculate()}
+        >
+          {isLoading ? loadingLabel : "Calcular rota segura"}
+        </button>
 
-      <div className="planner__form">
-        <AddressSearch
-          id="origin"
-          label="Origem"
-          placeholder="Ex.: Avenida Paulista"
-          value={form.originQuery}
-          selected={form.origin}
-          onQueryChange={(originQuery) => setForm((f) => ({ ...f, originQuery }))}
-          onSelect={(origin) => setForm((f) => ({ ...f, origin }))}
-        />
-        <AddressSearch
-          id="destination"
-          label="Destino"
-          placeholder="Ex.: Estação Santo Amaro"
-          value={form.destinationQuery}
-          selected={form.destination}
-          onQueryChange={(destinationQuery) => setForm((f) => ({ ...f, destinationQuery }))}
-          onSelect={(destination) => setForm((f) => ({ ...f, destination }))}
-        />
-
-        <div className="planner__actions-row">
-          <label className="route-field">
-            <span>Perfil operacional</span>
-            <select
-              value={form.profile}
-              disabled={isLoading}
-              onChange={(e) => setForm((f) => ({ ...f, profile: e.target.value as PlannerProfile }))}
-            >
-              {(Object.entries(PLANNER_PROFILE_LABELS) as [PlannerProfile, string][]).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <div className="planner__buttons">
-            <button type="button" className="btn-secondary" disabled={isLoading} onClick={applyExample}>
-              Usar exemplo
-            </button>
+        {!planned && (
+          <div className="home-form__quick">
             <button
               type="button"
-              className={`btn-orbit btn-orbit--large${isLoading ? " is-loading" : ""}`}
+              className="btn-secondary btn-secondary--quick"
               disabled={isLoading}
-              onClick={() => void calculate()}
+              onClick={() => void applyRandomAndCalculate()}
             >
-              {isLoading ? loadingLabel : "Calcular rota segura"}
+              {isLoading ? "Calculando…" : "Aleatório e calcular"}
             </button>
+            <div className="home-form__secondary">
+              <button type="button" className="btn-link" disabled={isLoading} onClick={onDemoFlood}>
+                {isLoading ? "…" : "Exemplo com enchente"}
+              </button>
+              <span className="home-form__sep" aria-hidden="true">
+                ·
+              </span>
+              <button type="button" className="btn-link" disabled={isLoading} onClick={applyExample}>
+                Paulista → Santo Amaro
+              </button>
+              <span className="home-form__sep" aria-hidden="true">
+                ·
+              </span>
+              <button type="button" className="btn-link" disabled={isLoading} onClick={applyRandomRoute}>
+                Só preencher aleatório
+              </button>
+            </div>
           </div>
-        </div>
-      </div>
+        )}
 
-      <ScenarioSimulator
-        activeScenario={activeScenario}
-        isLoading={isLoading}
-        hasRoute={Boolean(planned)}
-        onSelectScenario={(s) => void applyScenario(s)}
-        onClear={() => void applyScenario("clear")}
-      />
+        {!isCitizen && (
+          <details className="planner__advanced">
+            <summary>Opções avançadas</summary>
+            <label className="route-field">
+              <span>Perfil</span>
+              <select
+                value={form.profile}
+                disabled={isLoading}
+                onChange={(e) => setForm((f) => ({ ...f, profile: e.target.value as PlannerProfile }))}
+              >
+                {(Object.entries(PLANNER_PROFILE_LABELS) as [PlannerProfile, string][]).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </details>
+        )}
+      </div>
 
       {error && (
         <p className="route-error" role="alert">
@@ -134,13 +172,25 @@ export function SafeRoutePlanner({ mode, planner, mapLayers, onLayersChange, onO
 
       {planned && (
         <div className="planner__results">
+          <RouteSummary planned={planned} compact={isCitizen} />
+
+          <RouteOperationalBridge planned={planned} onOpenManager={onOpenManager} />
+
           {isCitizen && (
             <div className="citizen-banner card">
               <p>{buildCitizenRouteMessage(planned.route)}</p>
             </div>
           )}
 
-          <RouteSummary planned={planned} compact={isCitizen} />
+          <ScenarioSimulator
+            activeScenario={activeScenario}
+            isLoading={isLoading}
+            hasRoute={Boolean(planned)}
+            onSelectScenario={(s) => void applyScenario(s)}
+            onClear={() => void applyScenario("clear")}
+          />
+
+          <DataHubPanel entries={dataHub} mode={mode} collapsible />
 
           {!isCitizen && mapLayers.satelliteLayers && planned.environmental && (
             <SatelliteLayersPanel layers={planned.environmental.satelliteLayers} />
@@ -160,9 +210,15 @@ export function SafeRoutePlanner({ mode, planner, mapLayers, onLayersChange, onO
                 showAllRiskZones
                 hideLayerUI
               />
+              {firmsEmptyNotice && (
+                <MapFeedNotice variant="info">
+                  NASA FIRMS consultado: nenhum foco de calor ativo nesta área nas últimas 24h (dado real).
+                  {!mapLayers.fireHotspots && isCitizen && " No Modo Gestor, ative a camada Focos de calor no mapa."}
+                </MapFeedNotice>
+              )}
               <p className="planner__map-hint">
-                Ciano: rota segura · Vermelho: convencional · Azul: pluviômetro · Laranja: foco de calor
-                {isScenarioActive(activeScenario) ? " · Borda pulsante: evento simulado" : ""}
+                Ciano = segura · Vermelho = convencional
+                {isScenarioActive(activeScenario) ? " · Simulação ativa" : ""}
               </p>
             </div>
 
@@ -170,7 +226,7 @@ export function SafeRoutePlanner({ mode, planner, mapLayers, onLayersChange, onO
               <WeatherPanel weather={planned.weather} scenarioActive={isScenarioActive(planned.scenario)} />
               <RouteExplanation planned={planned} compact={isCitizen} />
               <button type="button" className="btn-secondary btn-secondary--full" onClick={onOpenReport}>
-                Gerar relatório da simulação
+                Relatório
               </button>
             </aside>
           </div>

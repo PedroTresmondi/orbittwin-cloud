@@ -8,7 +8,7 @@ type HeaderProps = {
 
 export function Header({ mode, onModeChange }: HeaderProps) {
   return (
-    <header className="header">
+    <header className="header header--compact">
       <div className="header__inner">
         <div className="header__brand">
           <div className="header__logo" aria-hidden="true">
@@ -17,18 +17,11 @@ export function Header({ mode, onModeChange }: HeaderProps) {
             <span className="logo-satellite" />
           </div>
           <div className="header__titles">
-            <h1>OrbitTwin Cloud</h1>
-            <p className="header__subtitle">Google Maps de segurança climática · São Paulo</p>
+            <h1>OrbitTwin</h1>
+            <p className="header__subtitle">Rotas seguras · São Paulo</p>
           </div>
         </div>
-        <div className="header__meta">
-          <ViewModeToggle mode={mode} onChange={onModeChange} />
-          <span className="badge badge--gs">Global Solution 2026 | Indústria Espacial</span>
-          <span className="badge badge--azure">
-            <span className="status-dot" />
-            Publicado em Azure Container Instances
-          </span>
-        </div>
+        <ViewModeToggle mode={mode} onChange={onModeChange} />
       </div>
     </header>
   );

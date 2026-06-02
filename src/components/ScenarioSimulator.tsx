@@ -3,10 +3,10 @@ import { SCENARIO_LABELS, isScenarioActive } from "../services/scenarioService";
 
 const SCENARIO_BUTTONS: { id: ScenarioKind; label: string }[] = [
   { id: "heavy_rain", label: "Chuva forte" },
-  { id: "flood", label: "Enchente / alagamento" },
-  { id: "blockage", label: "Bloqueio de vias" },
-  { id: "landslide", label: "Deslizamento / encosta" },
-  { id: "multiple", label: "Múltiplos riscos" },
+  { id: "flood", label: "Enchente" },
+  { id: "blockage", label: "Bloqueio" },
+  { id: "landslide", label: "Deslizamento" },
+  { id: "multiple", label: "Múltiplos" },
 ];
 
 type ScenarioSimulatorProps = {
@@ -24,20 +24,16 @@ export function ScenarioSimulator({
   onSelectScenario,
   onClear,
 }: ScenarioSimulatorProps) {
-  return (
-    <section className="scenario-simulator card" aria-labelledby="scenario-sim-title">
-      <header className="scenario-simulator__head">
-        <h3 id="scenario-sim-title">Simular cenário de risco</h3>
-        <p>
-          Ative eventos extremos para demonstrar a rota segura — útil quando não há chuva real no dia da apresentação.
-        </p>
-      </header>
+  if (!hasRoute) return null;
 
-      {!hasRoute && (
-        <p className="scenario-simulator__hint" role="status">
-          Defina uma origem e um destino para visualizar o impacto da simulação na rota.
-        </p>
-      )}
+  return (
+    <details className="scenario-simulator" open={isScenarioActive(activeScenario)}>
+      <summary className="scenario-simulator__summary">
+        Simular risco na rota
+        {isScenarioActive(activeScenario) && (
+          <span className="scenario-simulator__pill">{SCENARIO_LABELS[activeScenario]}</span>
+        )}
+      </summary>
 
       <div className="scenario-simulator__grid">
         {SCENARIO_BUTTONS.map((btn) => (
@@ -57,15 +53,9 @@ export function ScenarioSimulator({
           disabled={isLoading || !isScenarioActive(activeScenario)}
           onClick={onClear}
         >
-          Limpar simulação
+          Voltar ao real
         </button>
       </div>
-
-      {isScenarioActive(activeScenario) && (
-        <p className="scenario-simulator__active">
-          Cenário ativo: <strong>{SCENARIO_LABELS[activeScenario]}</strong>
-        </p>
-      )}
-    </section>
+    </details>
   );
 }

@@ -50,6 +50,9 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          # Repositório → Settings → Secrets → Actions → VITE_NASA_FIRMS_MAP_KEY
+          VITE_NASA_FIRMS_MAP_KEY: ${{ secrets.VITE_NASA_FIRMS_MAP_KEY }}
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
