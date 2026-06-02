@@ -13,7 +13,7 @@ export function RouteExplanation({ planned, compact = false }: RouteExplanationP
   const simulated = isScenarioActive(planned.scenario);
 
   return (
-    <section className="route-explanation card">
+    <section className="route-explanation glass-surface">
       <h3>{compact ? "Resumo da recomendação" : "Por que o OrbitTwin recomenda essa rota?"}</h3>
       <p className={`route-explanation__mode route-explanation__mode--${planned.dataMode}`}>
         {simulated

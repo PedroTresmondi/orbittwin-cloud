@@ -23,12 +23,22 @@ export function buildSafeWaypoints(path: GeoPoint[], zones: RiskZone[]): GeoPoin
   });
 }
 
+/** Ponto dentro da zona (centroide) — útil para forçar passagem na rota convencional na demo GS */
+export function zoneInteriorPoint(zone: RiskZone): GeoPoint {
+  return polygonCentroid(zone.polygon);
+}
+
+/** Waypoint de desvio para OSRM contornar a zona */
+export function detourWaypointForZone(path: GeoPoint[], zone: RiskZone): GeoPoint {
+  return offsetOutsideZone(path, zone);
+}
+
 function offsetOutsideZone(path: GeoPoint[], zone: RiskZone): GeoPoint {
   const centroid = polygonCentroid(zone.polygon);
   const midPath = path[Math.floor(path.length / 2)] ?? path[0];
   const dLat = midPath[0] - centroid[0];
   const dLng = midPath[1] - centroid[1];
-  const factor = zone.riskLevel === "critical" ? 0.018 : 0.012;
+  const factor = zone.riskLevel === "critical" ? 0.028 : 0.016;
   const len = Math.hypot(dLat, dLng) || 1;
   return [centroid[0] + (dLat / len) * factor, centroid[1] + (dLng / len) * factor];
 }

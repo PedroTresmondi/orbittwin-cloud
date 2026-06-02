@@ -7,14 +7,10 @@ type DecisionRecommendationProps = {
 
 export function DecisionRecommendation({ recommendation }: DecisionRecommendationProps) {
   return (
-    <section className="decision-rec card" aria-labelledby="decision-rec-title">
-      <header className="decision-rec__head">
-        <h3 id="decision-rec-title">Recomendação OrbitTwin</h3>
-        <div className="decision-rec__meta">
-          <span className="decision-rec__confidence">Confiança: {recommendation.confidence}%</span>
-          <DataStatusBadge mode={recommendation.source} size="md" />
-        </div>
-      </header>
+    <div className="decision-rec__body" aria-labelledby="decision-rec-title">
+      <p id="decision-rec-title" className="visually-hidden">
+        Recomendação OrbitTwin
+      </p>
       <dl className="decision-rec__dl">
         <div>
           <dt>Cenário</dt>
@@ -36,6 +32,10 @@ export function DecisionRecommendation({ recommendation }: DecisionRecommendatio
           ))}
         </ul>
       )}
-    </section>
+      <div className="decision-rec__footer">
+        <span className="decision-rec__confidence">Confiança: {recommendation.confidence}%</span>
+        <DataStatusBadge mode={recommendation.source} size="md" />
+      </div>
+    </div>
   );
 }

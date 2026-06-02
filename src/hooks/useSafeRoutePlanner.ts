@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { DEFAULT_DATA_HUB } from "../services/dataHubService";
 import { emptyEnvironmentalContext } from "../services/environmentalDataService";
 import { isFirmsApiConfigured } from "../services/fireService";
+import { GS_DETOUR_ROUTE } from "../data/gsDetourDemo";
 import { EXAMPLE_ROUTE, pickRandomSpRoute } from "../services/geocodingService";
 import { buildOperationalEvent, buildSimulationReport, planSafeRoute } from "../services/routeService";
 import { clearOperationalHistory, persistOperationalHistory, loadOperationalHistory } from "../services/storageService";
@@ -46,9 +47,18 @@ export function useSafeRoutePlanner(_mode: AppMode) {
   const [report, setReport] = useState<SimulationReport | null>(null);
 
   const runPlan = useCallback(
-    async (origin: GeocodeResult, destination: GeocodeResult, profile: PlannerProfile, scenario: ScenarioKind) => {
+    async (
+      origin: GeocodeResult,
+      destination: GeocodeResult,
+      profile: PlannerProfile,
+      scenario: ScenarioKind,
+      options?: { gsDetourDemo?: boolean },
+    ) => {
       setLoadingPhase("routing");
-      const result = await planSafeRoute(origin, destination, profile, { scenario });
+      const result = await planSafeRoute(origin, destination, profile, {
+        scenario,
+        gsDetourDemo: options?.gsDetourDemo,
+      });
       setLoadingPhase("risk");
       setPlanned(result);
       setActiveScenario(scenario);
@@ -211,18 +221,54 @@ export function useSafeRoutePlanner(_mode: AppMode) {
     [form, runPlan],
   );
 
+  const demoGsDetourExample = useCallback(async () => {
+    setForm({
+      originQuery: GS_DETOUR_ROUTE.originQuery,
+      destinationQuery: GS_DETOUR_ROUTE.destinationQuery,
+      origin: GS_DETOUR_ROUTE.origin,
+      destination: GS_DETOUR_ROUTE.destination,
+      profile: "citizen",
+    });
+    setError(null);
+    setIsLoading(true);
+    setLoadingPhase("routing");
+    try {
+      const result = await runPlan(
+        GS_DETOUR_ROUTE.origin,
+        GS_DETOUR_ROUTE.destination,
+        "citizen",
+        "real",
+        { gsDetourDemo: true },
+      );
+      setActiveScenario("real");
+      if (result.warnings.length) setError(result.warnings.join(" "));
+      return result;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha na demonstração de desvio.");
+    } finally {
+      setIsLoading(false);
+      setLoadingPhase("idle");
+    }
+  }, [runPlan]);
+
   const demoFloodExample = useCallback(async () => {
     setForm({
-      originQuery: EXAMPLE_ROUTE.originQuery,
-      destinationQuery: EXAMPLE_ROUTE.destinationQuery,
-      origin: EXAMPLE_ROUTE.origin,
-      destination: EXAMPLE_ROUTE.destination,
+      originQuery: GS_DETOUR_ROUTE.originQuery,
+      destinationQuery: GS_DETOUR_ROUTE.destinationQuery,
+      origin: GS_DETOUR_ROUTE.origin,
+      destination: GS_DETOUR_ROUTE.destination,
       profile: "citizen",
     });
     setError(null);
     setIsLoading(true);
     try {
-      const result = await runPlan(EXAMPLE_ROUTE.origin, EXAMPLE_ROUTE.destination, "citizen", "flood");
+      const result = await runPlan(
+        GS_DETOUR_ROUTE.origin,
+        GS_DETOUR_ROUTE.destination,
+        "citizen",
+        "flood",
+        { gsDetourDemo: true },
+      );
       setActiveScenario("flood");
       if (result.warnings.length) setError(result.warnings.join(" "));
     } catch (err) {
@@ -295,6 +341,7 @@ export function useSafeRoutePlanner(_mode: AppMode) {
     applyRandomAndCalculate,
     calculate,
     applyScenario,
+    demoGsDetourExample,
     demoFloodExample,
     openReport,
     loadFromHistory,

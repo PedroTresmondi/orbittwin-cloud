@@ -12,7 +12,7 @@ export function ReportModal({ report, onClose }: ReportModalProps) {
   return (
     <div className="modal-backdrop" role="presentation" onClick={onClose}>
       <div
-        className="modal card"
+        className="modal glass-surface"
         role="dialog"
         aria-modal="true"
         aria-labelledby="report-title"

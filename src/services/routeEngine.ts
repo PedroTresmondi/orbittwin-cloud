@@ -2,7 +2,8 @@ import { RISK_ZONES } from "../data/riskZones";
 import { ROUTE_AVOIDED_BLOCKS, ROUTE_CRITICAL_SEGMENTS } from "../data";
 import type { RiskZone } from "../data/riskZones";
 import type { GeoPoint, GeocodeResult, RouteResult, RouteSource, TravelProfile } from "../types";
-import { buildSafeWaypoints } from "../utils/riskGeometry";
+import { GS_SHOWCASE_ZONE_ID } from "../data/gsDetourDemo";
+import { buildSafeWaypoints, detourWaypointForZone, findCrossedZones, zoneInteriorPoint } from "../utils/riskGeometry";
 import { calculateDistanceKm, calculateTravelTimeMinutes } from "./riskModel";
 import { buildRecommendationConfidence } from "./riskService";
 
@@ -28,6 +29,98 @@ export async function getRoute(origin: GeocodeResult, destination: GeocodeResult
     const path = buildFallbackPath(originPoint, destPoint);
     return buildRouteResult(path, "fallback");
   }
+}
+
+/**
+ * Demo GS: rota convencional atravessa zona crítica (Marginal Tietê); rota segura contorna via waypoints OSRM.
+ */
+export async function getGsDetourRoutes(
+  origin: GeocodeResult,
+  destination: GeocodeResult,
+  riskZones: RiskZone[],
+): Promise<{ conventional: RouteResult; safe: RouteResult; usedFallback: boolean; showcaseZoneName: string }> {
+  const showcaseZone =
+    riskZones.find((z) => z.id === GS_SHOWCASE_ZONE_ID) ??
+    riskZones.find((z) => z.riskLevel === "critical") ??
+    riskZones[0];
+
+  const originPoint: GeoPoint = [origin.lat, origin.lng];
+  const destPoint: GeoPoint = [destination.lat, destination.lng];
+
+  let conventional = await getRoute(origin, destination);
+  let convPath = conventional.path;
+
+  const crossesShowcase = (path: GeoPoint[]) =>
+    findCrossedZones(path, riskZones).some((z) => z.id === showcaseZone.id);
+
+  if (!crossesShowcase(convPath)) {
+    const anchor = zoneInteriorPoint(showcaseZone);
+    try {
+      const via = await fetchOsrmRoute([originPoint, anchor, destPoint]);
+      convPath = via.path;
+      conventional = buildRouteResult(via.path, "osrm", via.durationSeconds, via.distanceMeters);
+    } catch {
+      convPath = [originPoint, anchor, destPoint];
+      conventional = buildRouteResult(convPath, "fallback");
+    }
+  }
+
+  const conventionalWithPath: RouteResult = { ...conventional, path: convPath };
+
+  let waypoints = buildSafeWaypoints(convPath, riskZones);
+  if (waypoints.length === 0) {
+    waypoints = [detourWaypointForZone(convPath, showcaseZone)];
+  }
+
+  const viaPoints = [originPoint, ...waypoints, destPoint];
+
+  try {
+    const osrm = await fetchOsrmRoute(viaPoints);
+    let safePath = osrm.path;
+    let durationSeconds = osrm.durationSeconds;
+    let distanceMeters = osrm.distanceMeters;
+    if (crossesShowcase(safePath) && waypoints.length < 3) {
+      waypoints.push(detourWaypointForZone(safePath, showcaseZone));
+      const retry = await fetchOsrmRoute([originPoint, ...waypoints, destPoint]);
+      safePath = retry.path;
+      durationSeconds = retry.durationSeconds;
+      distanceMeters = retry.distanceMeters;
+    }
+    return {
+      conventional: conventionalWithPath,
+      safe: buildRouteResult(safePath, "osrm", durationSeconds, distanceMeters),
+      usedFallback: false,
+      showcaseZoneName: showcaseZone.name,
+    };
+  } catch {
+    try {
+      const osrmLegs = await fetchOsrmRouteByLegs(viaPoints);
+      return {
+        conventional: conventionalWithPath,
+        safe: buildRouteResult(osrmLegs.path, "osrm", osrmLegs.durationSeconds, osrmLegs.distanceMeters),
+        usedFallback: false,
+        showcaseZoneName: showcaseZone.name,
+      };
+    } catch {
+      const fallbackSafe = buildDetourFallbackPath(originPoint, destPoint, showcaseZone, convPath);
+      return {
+        conventional: conventionalWithPath,
+        safe: buildRouteResult(fallbackSafe, "fallback"),
+        usedFallback: true,
+        showcaseZoneName: showcaseZone.name,
+      };
+    }
+  }
+}
+
+function buildDetourFallbackPath(
+  origin: GeoPoint,
+  destination: GeoPoint,
+  zone: RiskZone,
+  conventionalPath: GeoPoint[],
+): GeoPoint[] {
+  const detour = detourWaypointForZone(conventionalPath, zone);
+  return [origin, detour, destination];
 }
 
 export async function getSafeRoute(

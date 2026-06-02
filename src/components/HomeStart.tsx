@@ -5,34 +5,26 @@ type HomeStartProps = {
 };
 
 export function HomeStart({ hasOrigin, hasDestination, hasRoute }: HomeStartProps) {
-  if (hasRoute) return null;
+  if (hasRoute) {
+    return (
+      <header className="home-start home-start--compact">
+        <h2 id="hero-title">Sua rota</h2>
+        <p className="home-start__lead">Use as abas abaixo para ver o mapa, simular riscos ou abrir detalhes.</p>
+      </header>
+    );
+  }
+
+  const step = !hasOrigin ? 1 : !hasDestination ? 2 : 3;
 
   return (
     <header className="home-start">
       <h2 id="hero-title">Para onde você vai?</h2>
-      <p className="home-start__lead">Compare a rota comum com uma rota mais segura em áreas de risco.</p>
-      <ol className="home-start__steps" aria-label="Passos">
-        <li className={hasOrigin ? "home-start__step is-done" : "home-start__step is-current"}>
-          <span className="home-start__num">1</span>
-          Origem
-        </li>
-        <li
-          className={
-            hasDestination
-              ? "home-start__step is-done"
-              : hasOrigin
-                ? "home-start__step is-current"
-                : "home-start__step"
-          }
-        >
-          <span className="home-start__num">2</span>
-          Destino
-        </li>
-        <li className={hasOrigin && hasDestination ? "home-start__step is-current" : "home-start__step"}>
-          <span className="home-start__num">3</span>
-          Calcular
-        </li>
-      </ol>
+      <p className="home-start__lead">
+        Informe origem e destino em São Paulo. O OrbitTwin compara a rota comum com uma alternativa mais segura.
+      </p>
+      <p className="home-start__step-hint" aria-live="polite">
+        Passo {step} de 3: {step === 1 ? "origem" : step === 2 ? "destino" : "calcular"}
+      </p>
     </header>
   );
 }

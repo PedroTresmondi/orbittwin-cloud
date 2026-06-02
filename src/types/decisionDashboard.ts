@@ -65,7 +65,12 @@ export type DecisionDashboardSnapshot = {
   recommendation: DecisionRecommendationData;
   dataSources: DashboardDataSourceChip[];
   mapZones: UrbanRiskMapZone[];
-  mapMarkers: { id: string; label: string; type: "sensor" | "station" | "fire" | "block" }[];
+  mapMarkers: {
+    id: string;
+    label: string;
+    type: "sensor" | "station" | "fire" | "block";
+    zoneId: string;
+  }[];
   updatedAt: string;
 };
 

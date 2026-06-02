@@ -21,7 +21,7 @@ export function CriticalRegionsChart({ regions }: CriticalRegionsChartProps) {
   const rest = regions.slice(4);
 
   return (
-    <section className="critical-regions card" aria-labelledby="critical-regions-title">
+    <section className="critical-regions glass-surface" aria-labelledby="critical-regions-title">
       <header className="critical-regions__head">
         <h3 id="critical-regions-title">
           <span className="critical-regions__icon" aria-hidden="true" />
